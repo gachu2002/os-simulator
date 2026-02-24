@@ -1,0 +1,16 @@
+import type { LessonRunResponse } from "../lib/lessonApi";
+import type { SnapshotDTO } from "../lib/types";
+
+export function snapshotFromLessonRun(result: LessonRunResponse): SnapshotDTO {
+  return {
+    protocol_version: "v1alpha1",
+    session_id: `lesson:${result.lesson_id}`,
+    tick: result.output.tick,
+    trace_hash: result.output.trace_hash,
+    trace_length: result.output.trace_length,
+    processes: result.output.processes,
+    metrics: result.output.metrics,
+    memory: result.output.memory,
+    last_command: `lesson.run.${result.lesson_id}.stage.${result.stage_index}`,
+  };
+}

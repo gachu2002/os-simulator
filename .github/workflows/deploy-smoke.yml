@@ -1,0 +1,40 @@
+name: deploy-smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
+      FRONTEND_BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
+    steps:
+      - name: Validate required variables
+        run: |
+          if [ -z "$BACKEND_BASE_URL" ]; then
+            echo "Missing BACKEND_BASE_URL repository variable"
+            exit 1
+          fi
+          if [ -z "$FRONTEND_BASE_URL" ]; then
+            echo "Missing FRONTEND_BASE_URL repository variable"
+            exit 1
+          fi
+
+      - name: Backend health check
+        run: curl -fsSL "$BACKEND_BASE_URL/healthz" > /dev/null
+
+      - name: Backend lessons list check
+        run: curl -fsSL "$BACKEND_BASE_URL/lessons" > /dev/null
+
+      - name: Backend lesson run check
+        run: |
+          curl -fsSL -X POST "$BACKEND_BASE_URL/lessons/run" \
+            -H "Content-Type: application/json" \
+            -d '{"lesson_id":"l01-sched-rr-basics","stage_index":0}' > /dev/null
+
+      - name: Frontend availability check
+        run: curl -fsSL "$FRONTEND_BASE_URL" > /dev/null

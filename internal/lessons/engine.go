@@ -53,6 +53,14 @@ func NewEngine() *Engine {
 	return &Engine{catalog: DefaultCatalog(), progress: NewProgressStore()}
 }
 
+func NewEngineWithCatalog(catalog map[string]Lesson) *Engine {
+	copyCatalog := make(map[string]Lesson, len(catalog))
+	for id, lesson := range catalog {
+		copyCatalog[id] = lesson
+	}
+	return &Engine{catalog: copyCatalog, progress: NewProgressStore()}
+}
+
 func (e *Engine) Lessons() []Lesson {
 	out := make([]Lesson, 0, len(e.catalog))
 	ids := make([]string, 0, len(e.catalog))

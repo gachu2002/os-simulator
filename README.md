@@ -17,6 +17,14 @@ go run ./cmd/simcli -program "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYS
 go run ./cmd/simcli -run-lesson-pack
 ```
 
+## Realtime Server + Web UI (Milestone 12)
+
+```bash
+go run ./cmd/server -addr :8080
+pnpm --dir web install
+pnpm --dir web dev
+```
+
 ## Stable Engineering Workflow
 
 Use `make` targets:
@@ -45,3 +53,7 @@ go run ./cmd/simcli -program "ACCESS 0x0 r; ACCESS 0x1000 r; EXIT" -steps 12 -em
 ## Release Process
 
 See `docs/release-checklist.md`.
+
+## Free Deploy + CD
+
+See `docs/deployment-free.md` for the recommended free setup (Render + Cloudflare Pages + GitHub deploy smoke checks).

@@ -21,8 +21,21 @@ metadata:
 - Prefer named imports and consistent component naming.
 - Do not mutate data that represents immutable snapshots.
 
+## Visual direction (simple, modern, classic)
+- Prefer a restrained, timeless look: clean spacing, readable hierarchy, minimal ornament.
+- Use a neutral palette with one accent color; avoid high-saturation novelty themes.
+- Choose purposeful typography pairing (one UI sans + one content serif if needed).
+- Use subtle motion only for state transitions that improve comprehension.
+- Keep controls and charts legible on desktop and mobile without dense chrome.
+
+## Frontend architecture expectations
+- UI reads immutable snapshot/trace DTOs from adapters; no direct simulator mutation.
+- Keep deterministic event ordering in client state updates.
+- Separate transport client, selectors, and presentational components.
+
 ## Verification
 - `pnpm --dir web prettier --write .`
 - `pnpm --dir web eslint .`
 - `pnpm --dir web tsc --noEmit`
 - `pnpm --dir web vitest run`
+- `pnpm --dir web build`

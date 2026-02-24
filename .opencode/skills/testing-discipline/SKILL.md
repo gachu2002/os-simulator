@@ -27,3 +27,13 @@ metadata:
 - Run targeted tests first.
 - Run affected package or test file suite.
 - Finish with full suite for touched stack.
+
+## Coverage and quality gates
+- Backend targets: `internal/sim >= 85%`, `internal/lessons >= 85%`.
+- Raise `cmd/simcli` coverage with CLI behavior tests for main execution paths.
+- Frontend targets (when `web/` exists): selectors/adapters/components covered by Vitest.
+- Add at least one Playwright smoke path for control loop and one lesson flow.
+
+## Determinism-first checks
+- Re-run deterministic tests twice and compare result stability.
+- For transport/UI work, verify same seed + command sequence yields identical timeline hash.

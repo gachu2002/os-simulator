@@ -22,6 +22,11 @@ metadata:
 - Lesson logic observes state and uses command APIs.
 - Keep policy modules pluggable (scheduler/replacement).
 
+## Frontend workflow expectations
+- When `web/` is present, run frontend checks before handoff.
+- Required: `pnpm --dir web eslint .`, `pnpm --dir web tsc --noEmit`, `pnpm --dir web vitest run`, `pnpm --dir web build`.
+- Keep UI architecture adapter-driven: transport -> typed DTOs -> selectors -> components.
+
 ## Verification checklist
 - Formatting and lint completed for touched stack.
 - Targeted tests executed first.

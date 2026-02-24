@@ -4,7 +4,10 @@
 
 - `internal/sim`: deterministic simulator core, schedulers, VM, syscall path, devices/IRQs, filesystem, replay
 - `internal/lessons`: lesson DSL/catalog, validators, hint progression, progress/analytics
+- `internal/transport/realtime`: HTTP + WebSocket session transport, command validation, immutable snapshot DTO stream
 - `cmd/simcli`: headless runner for simulation, replay, lesson execution, and analytics
+- `cmd/server`: realtime transport server entrypoint for browser sessions
+- `web`: React + TypeScript control UI for session creation, run/pause/step/reset, and event log/status panels
 
 ## Determinism Contract
 
