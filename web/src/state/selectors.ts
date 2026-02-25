@@ -49,7 +49,9 @@ export interface ProcessQueues {
   terminated: string[];
 }
 
-export function selectProcessQueues(snapshot: SnapshotDTO | null): ProcessQueues {
+export function selectProcessQueues(
+  snapshot: SnapshotDTO | null,
+): ProcessQueues {
   const queues: ProcessQueues = {
     running: [],
     ready: [],
@@ -60,7 +62,9 @@ export function selectProcessQueues(snapshot: SnapshotDTO | null): ProcessQueues
     return queues;
   }
 
-  const ordered = asArray(snapshot.processes).slice().sort((a, b) => a.pid - b.pid);
+  const ordered = asArray(snapshot.processes)
+    .slice()
+    .sort((a, b) => a.pid - b.pid);
   for (const proc of ordered) {
     const label = `P${proc.pid} ${proc.name}`;
     if (proc.state === "running") {
@@ -72,7 +76,9 @@ export function selectProcessQueues(snapshot: SnapshotDTO | null): ProcessQueues
       continue;
     }
     if (proc.state === "blocked") {
-      const blockedSuffix = proc.blocked_until ? ` (until ${proc.blocked_until})` : "";
+      const blockedSuffix = proc.blocked_until
+        ? ` (until ${proc.blocked_until})`
+        : "";
       queues.blocked.push(`${label}${blockedSuffix}`);
       continue;
     }
@@ -101,7 +107,9 @@ export function selectProcessMetricRows(
     return [];
   }
 
-  const byPID = new Map(asArray(snapshot.processes).map((proc) => [proc.pid, proc]));
+  const byPID = new Map(
+    asArray(snapshot.processes).map((proc) => [proc.pid, proc]),
+  );
   return asArray(snapshot.metrics.processes)
     .slice()
     .sort((a, b) => a.pid - b.pid)

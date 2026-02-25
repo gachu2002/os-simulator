@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 
 import {
   fetchLessons,
   runLessonStage,
   type LessonRunResponse,
-  type LessonSummary,
 } from "../lib/lessonApi";
 
 interface LessonRunnerPanelProps {
@@ -12,72 +12,96 @@ interface LessonRunnerPanelProps {
   onRunResult?: (result: LessonRunResponse) => void;
 }
 
-export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelProps) {
-  const [lessons, setLessons] = useState<LessonSummary[]>([]);
-  const [selectedLessonID, setSelectedLessonID] = useState("");
-  const [selectedStageIndex, setSelectedStageIndex] = useState(0);
+export function LessonRunnerPanel({
+  baseURL,
+  onRunResult,
+}: LessonRunnerPanelProps) {
+  const [selectedLessonIDState, setSelectedLessonIDState] = useState("");
+  const [selectedStageIndexState, setSelectedStageIndexState] = useState(0);
   const [runResult, setRunResult] = useState<LessonRunResponse | null>(null);
   const [lastTraceHash, setLastTraceHash] = useState("");
-  const [determinismStatus, setDeterminismStatus] = useState<"" | "stable" | "changed">("");
-  const [loading, setLoading] = useState(false);
-  const [running, setRunning] = useState(false);
-  const [error, setError] = useState("");
+  const [determinismStatus, setDeterminismStatus] = useState<
+    "" | "stable" | "changed"
+  >("");
+  const [runError, setRunError] = useState("");
+
+  const lessonsQuery = useQuery({
+    queryKey: ["lessons", baseURL],
+    queryFn: () => fetchLessons(baseURL),
+  });
+
+  const lessons = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
+
+  const runStageMutation = useMutation({
+    mutationFn: ({
+      lessonID,
+      stageIndex,
+    }: {
+      lessonID: string;
+      stageIndex: number;
+    }) => runLessonStage(baseURL, lessonID, stageIndex),
+  });
+
+  const selectedLessonID = useMemo(() => {
+    if (lessons.length === 0) {
+      return "";
+    }
+    if (lessons.some((lesson) => lesson.id === selectedLessonIDState)) {
+      return selectedLessonIDState;
+    }
+    return lessons[0].id;
+  }, [lessons, selectedLessonIDState]);
 
   const selectedLesson = useMemo(
     () => lessons.find((lesson) => lesson.id === selectedLessonID) ?? null,
     [lessons, selectedLessonID],
   );
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    fetchLessons(baseURL)
-      .then((loaded) => {
-        if (!active) {
-          return;
-        }
-        setLessons(loaded);
-        if (loaded.length > 0) {
-          setSelectedLessonID(loaded[0].id);
-          setSelectedStageIndex(loaded[0].stages[0]?.index ?? 0);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!active) {
-          return;
-        }
-        setError(err instanceof Error ? err.message : "failed to load lessons");
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
+  const selectedStageIndex = useMemo(() => {
+    if (!selectedLesson) {
+      return 0;
+    }
+    if (
+      selectedLesson.stages.some(
+        (stage) => stage.index === selectedStageIndexState,
+      )
+    ) {
+      return selectedStageIndexState;
+    }
+    return selectedLesson.stages[0]?.index ?? 0;
+  }, [selectedLesson, selectedStageIndexState]);
 
-    return () => {
-      active = false;
-    };
-  }, [baseURL]);
+  const errorMessage = useMemo(() => {
+    if (runError !== "") {
+      return runError;
+    }
+    return lessonsQuery.error instanceof Error
+      ? lessonsQuery.error.message
+      : "";
+  }, [lessonsQuery.error, runError]);
 
   async function handleRun() {
     if (!selectedLessonID) {
       return;
     }
-    setRunning(true);
-    setError("");
+    setRunError("");
     try {
-      const result = await runLessonStage(baseURL, selectedLessonID, selectedStageIndex);
+      const result = await runStageMutation.mutateAsync({
+        lessonID: selectedLessonID,
+        stageIndex: selectedStageIndex,
+      });
       if (lastTraceHash !== "") {
-        setDeterminismStatus(lastTraceHash === result.output.trace_hash ? "stable" : "changed");
+        setDeterminismStatus(
+          lastTraceHash === result.output.trace_hash ? "stable" : "changed",
+        );
       }
       setLastTraceHash(result.output.trace_hash);
       setRunResult(result);
       onRunResult?.(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "failed to run lesson stage");
-    } finally {
-      setRunning(false);
+      setRunError(
+        err instanceof Error ? err.message : "failed to run lesson stage",
+      );
     }
   }
 
@@ -89,12 +113,12 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
           Lesson
           <select
             value={selectedLessonID}
-            disabled={loading || lessons.length === 0}
+            disabled={lessonsQuery.isLoading || lessons.length === 0}
             onChange={(event) => {
               const nextID = event.target.value;
-              setSelectedLessonID(nextID);
+              setSelectedLessonIDState(nextID);
               const stage = lessons.find((l) => l.id === nextID)?.stages[0];
-              setSelectedStageIndex(stage?.index ?? 0);
+              setSelectedStageIndexState(stage?.index ?? 0);
             }}
           >
             {lessons.map((lesson) => (
@@ -110,7 +134,9 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
           <select
             value={selectedStageIndex}
             disabled={!selectedLesson}
-            onChange={(event) => setSelectedStageIndex(Number(event.target.value))}
+            onChange={(event) =>
+              setSelectedStageIndexState(Number(event.target.value))
+            }
           >
             {(selectedLesson?.stages ?? []).map((stage) => (
               <option key={stage.id} value={stage.index}>
@@ -120,12 +146,16 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
           </select>
         </label>
 
-        <button type="button" disabled={running || !selectedLessonID} onClick={handleRun}>
-          {running ? "Running..." : "Run Stage"}
+        <button
+          type="button"
+          disabled={runStageMutation.isPending || !selectedLessonID}
+          onClick={handleRun}
+        >
+          {runStageMutation.isPending ? "Running..." : "Run Stage"}
         </button>
       </div>
 
-      {error ? <p className="error">{error}</p> : null}
+      {errorMessage ? <p className="error">{errorMessage}</p> : null}
 
       {runResult ? (
         <>
@@ -147,7 +177,8 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
 
           {determinismStatus ? (
             <p className="determinism">
-              Determinism check: {determinismStatus === "stable" ? "stable hash" : "hash changed"}
+              Determinism check:{" "}
+              {determinismStatus === "stable" ? "stable hash" : "hash changed"}
             </p>
           ) : null}
 
@@ -155,14 +186,21 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
             <article>
               <h3>Completion</h3>
               <p>
-                {runResult.analytics.completed_stages}/{runResult.analytics.total_stages} (
+                {runResult.analytics.completed_stages}/
+                {runResult.analytics.total_stages} (
                 {formatPercent(runResult.analytics.completion_rate)})
               </p>
               <p>
-                coverage: {runResult.analytics.attempted_stages}/{runResult.analytics.total_stages} (
+                coverage: {runResult.analytics.attempted_stages}/
+                {runResult.analytics.total_stages} (
                 {formatPercent(runResult.analytics.attempt_coverage)})
               </p>
-              <p>pilot checklist: {runResult.analytics.pilot_checklist_ok ? "ready" : "in progress"}</p>
+              <p>
+                pilot checklist:{" "}
+                {runResult.analytics.pilot_checklist_ok
+                  ? "ready"
+                  : "in progress"}
+              </p>
             </article>
 
             <article>
@@ -170,7 +208,8 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
               <ul>
                 {runResult.analytics.module_breakdown.map((mod) => (
                   <li key={mod.module}>
-                    {mod.module}: {mod.completed_stage}/{mod.total_stages} ({formatPercent(mod.completion_rate)})
+                    {mod.module}: {mod.completed_stage}/{mod.total_stages} (
+                    {formatPercent(mod.completion_rate)})
                   </li>
                 ))}
               </ul>
@@ -178,7 +217,9 @@ export function LessonRunnerPanel({ baseURL, onRunResult }: LessonRunnerPanelPro
           </div>
         </>
       ) : (
-        <p className="empty">Run a lesson stage to view grading, hints, and analytics.</p>
+        <p className="empty">
+          Run a lesson stage to view grading, hints, and analytics.
+        </p>
       )}
     </section>
   );

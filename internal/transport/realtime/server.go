@@ -15,6 +15,7 @@ import (
 	"os-simulator-plan/internal/lessons"
 	"os-simulator-plan/internal/sim"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 )
 
@@ -47,13 +48,13 @@ func NewServerWithLessons(manager *SessionManager, lessonEngine *lessons.Engine)
 }
 
 func (s *Server) Handler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", s.handleHealth)
-	mux.HandleFunc("/sessions", s.handleSessions)
-	mux.HandleFunc("/lessons", s.handleLessons)
-	mux.HandleFunc("/lessons/run", s.handleLessonRun)
-	mux.HandleFunc("/ws/", s.handleWS)
-	return withRequestID(withCORS(originsForMiddleware(s.origins), mux))
+	router := chi.NewRouter()
+	router.HandleFunc("/healthz", s.handleHealth)
+	router.HandleFunc("/sessions", s.handleSessions)
+	router.HandleFunc("/lessons", s.handleLessons)
+	router.HandleFunc("/lessons/run", s.handleLessonRun)
+	router.HandleFunc("/ws/{id}", s.handleWS)
+	return withRequestID(withCORS(originsForMiddleware(s.origins), router))
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
@@ -65,7 +66,7 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var cfg SessionConfig
 	dec := json.NewDecoder(r.Body)
@@ -84,7 +85,7 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/ws/")
+	id := strings.TrimSpace(chi.URLParam(r, "id"))
 	if id == "" {
 		respondError(w, r, http.StatusBadRequest, "missing_session_id", "missing session id")
 		return
@@ -98,7 +99,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	if err := conn.WriteJSON(session.SnapshotEvent("connected")); err != nil {
 		return
@@ -308,7 +309,7 @@ func (s *Server) handleLessonRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req LessonRunRequest
 	dec := json.NewDecoder(r.Body)

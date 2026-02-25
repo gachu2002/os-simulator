@@ -9,8 +9,8 @@
 ## Validation
 
 - [ ] `go test ./...`
-- [ ] `pnpm --dir web vitest run`
-- [ ] `pnpm --dir web build`
+- [ ] `pnpm --dir=web run test`
+- [ ] `pnpm --dir=web run build`
 
 ## Determinism Impact
 

@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import { ControlBar } from "./components/ControlBar";
@@ -18,11 +19,21 @@ export function App() {
   const [seed, setSeed] = useState(1);
   const [policy, setPolicy] = useState<"fifo" | "rr" | "mlfq">("rr");
   const [quantum, setQuantum] = useState(2);
-  const [isCreating, setIsCreating] = useState(false);
-  const [lessonSnapshot, setLessonSnapshot] = useState<ReturnType<typeof snapshotFromLessonRun> | null>(null);
+  const [lessonSnapshot, setLessonSnapshot] = useState<ReturnType<
+    typeof snapshotFromLessonRun
+  > | null>(null);
   const [lessonTitle, setLessonTitle] = useState("");
   const [compareMode, setCompareMode] = useState(true);
   const socketRef = useRef<SessionSocket | null>(null);
+
+  const createSessionMutation = useMutation({
+    mutationFn: () =>
+      createSession(baseURL, {
+        seed,
+        policy,
+        quantum,
+      }),
+  });
 
   const canSend = useMemo(
     () => Boolean(state.sessionID && state.connected),
@@ -37,17 +48,12 @@ export function App() {
   }, []);
 
   async function handleCreateSession() {
-    setIsCreating(true);
     dispatch({ type: "error", message: "" });
     try {
       socketRef.current?.close();
       socketRef.current = null;
 
-      const created = await createSession(baseURL, {
-        seed,
-        policy,
-        quantum,
-      });
+      const created = await createSessionMutation.mutateAsync();
 
       dispatch({
         type: "session.created",
@@ -72,10 +78,9 @@ export function App() {
     } catch (error) {
       dispatch({
         type: "error",
-        message: error instanceof Error ? error.message : "failed to create session",
+        message:
+          error instanceof Error ? error.message : "failed to create session",
       });
-    } finally {
-      setIsCreating(false);
     }
   }
 
@@ -120,14 +125,21 @@ export function App() {
               onChange={(event) => setSeed(Number(event.target.value))}
             />
           </label>
-          <button type="button" disabled={isCreating} onClick={handleCreateSession}>
-            {isCreating ? "Creating..." : "Create Session"}
+          <button
+            type="button"
+            disabled={createSessionMutation.isPending}
+            onClick={handleCreateSession}
+          >
+            {createSessionMutation.isPending ? "Creating..." : "Create Session"}
           </button>
         </div>
         {state.error ? <p className="error">{state.error}</p> : null}
       </section>
 
-      <LessonRunnerPanel baseURL={baseURL} onRunResult={handleLessonRunResult} />
+      <LessonRunnerPanel
+        baseURL={baseURL}
+        onRunResult={handleLessonRunResult}
+      />
 
       <StatusCards
         connected={state.connected}
@@ -155,7 +167,11 @@ export function App() {
         </label>
       </section>
 
-      <div className={compareMode && lessonSnapshot ? "viz-compare-grid" : "viz-single-grid"}>
+      <div
+        className={
+          compareMode && lessonSnapshot ? "viz-compare-grid" : "viz-single-grid"
+        }
+      >
         <VisualizationSuite
           title="Live Session Visualizations"
           subtitle="Realtime transport stream from active session controls"

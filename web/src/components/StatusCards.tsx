@@ -6,7 +6,11 @@ interface StatusCardsProps {
   snapshot: SnapshotDTO | null;
 }
 
-export function StatusCards({ connected, sessionID, snapshot }: StatusCardsProps) {
+export function StatusCards({
+  connected,
+  sessionID,
+  snapshot,
+}: StatusCardsProps) {
   return (
     <section className="status-grid">
       <article className="panel stat">

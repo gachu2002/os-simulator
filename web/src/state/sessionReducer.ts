@@ -47,13 +47,16 @@ export function sessionReducer(
         sessionID: action.sessionID,
         snapshot: action.snapshot,
         nextLogID: state.nextLogID + 1,
-        logs: appendLog(state.logs, makeLogEntry(state.nextLogID, {
-          sequence: 1,
-          type: "session.created",
-          tick: action.snapshot.tick,
-          traceHash: action.snapshot.trace_hash,
-          detail: `session=${action.sessionID}`,
-        })),
+        logs: appendLog(
+          state.logs,
+          makeLogEntry(state.nextLogID, {
+            sequence: 1,
+            type: "session.created",
+            tick: action.snapshot.tick,
+            traceHash: action.snapshot.trace_hash,
+            detail: `session=${action.sessionID}`,
+          }),
+        ),
       };
     case "socket.connected":
       return {
@@ -77,13 +80,16 @@ export function sessionReducer(
           lastSequence: event.sequence,
           error: event.error ?? "unknown session error",
           nextLogID: state.nextLogID + 1,
-          logs: appendLog(state.logs, makeLogEntry(state.nextLogID, {
-            sequence: event.sequence,
-            type: event.type,
-            tick: state.snapshot?.tick ?? 0,
-            traceHash: state.snapshot?.trace_hash ?? "",
-            detail: event.error ?? "unknown session error",
-          })),
+          logs: appendLog(
+            state.logs,
+            makeLogEntry(state.nextLogID, {
+              sequence: event.sequence,
+              type: event.type,
+              tick: state.snapshot?.tick ?? 0,
+              traceHash: state.snapshot?.trace_hash ?? "",
+              detail: event.error ?? "unknown session error",
+            }),
+          ),
         };
       }
       if (!event.snapshot) {
@@ -95,13 +101,16 @@ export function sessionReducer(
         error: "",
         snapshot: event.snapshot,
         nextLogID: state.nextLogID + 1,
-        logs: appendLog(state.logs, makeLogEntry(state.nextLogID, {
-          sequence: event.sequence,
-          type: event.type,
-          tick: event.snapshot.tick,
-          traceHash: event.snapshot.trace_hash,
-          detail: event.snapshot.last_command ?? "snapshot",
-        })),
+        logs: appendLog(
+          state.logs,
+          makeLogEntry(state.nextLogID, {
+            sequence: event.sequence,
+            type: event.type,
+            tick: event.snapshot.tick,
+            traceHash: event.snapshot.trace_hash,
+            detail: event.snapshot.last_command ?? "snapshot",
+          }),
+        ),
       };
     }
     case "error":
@@ -122,9 +131,6 @@ function appendLog(logs: LogEntry[], entry: LogEntry): LogEntry[] {
   return next.slice(next.length - 200);
 }
 
-function makeLogEntry(
-  id: number,
-  entry: Omit<LogEntry, "id">,
-): LogEntry {
+function makeLogEntry(id: number, entry: Omit<LogEntry, "id">): LogEntry {
   return { id, ...entry };
 }

@@ -28,7 +28,7 @@ Notes:
 1. Create a new **Pages** project from this GitHub repo.
 2. Configure build settings:
    - **Framework preset**: Vite
-   - **Build command**: `pnpm --dir web build`
+   - **Build command**: `pnpm --dir=web run build`
    - **Build output directory**: `web/dist`
    - **Root directory**: repository root
 3. Deploy.
@@ -76,9 +76,9 @@ Run it manually with **Actions -> deploy-smoke -> Run workflow**, or let it run 
 
 ```bash
 go test ./...
-pnpm --dir web install
-pnpm --dir web eslint .
-pnpm --dir web tsc --noEmit
-pnpm --dir web vitest run
-pnpm --dir web build
+pnpm --dir=web install
+pnpm --dir=web run lint
+pnpm --dir=web run typecheck
+pnpm --dir=web run test
+pnpm --dir=web run build
 ```

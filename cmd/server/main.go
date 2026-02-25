@@ -4,22 +4,43 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"os-simulator-plan/internal/platform/db"
 	"os-simulator-plan/internal/transport/realtime"
+
+	"go.uber.org/zap"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "HTTP listen address")
 	flag.Parse()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		_, _ = os.Stderr.WriteString("failed to initialize logger\n")
+		os.Exit(1)
+	}
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	manager := realtime.NewSessionManager()
 	transport := realtime.NewServer(manager)
+	startupCtx, startupCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	pool, err := db.NewPoolFromEnv(startupCtx, logger)
+	startupCancel()
+	if err != nil {
+		logger.Error("database bootstrap failed", zap.Error(err))
+		os.Exit(1)
+	}
+	if pool != nil {
+		defer pool.Close()
+	}
+
 	httpServer := &http.Server{
 		Addr:              *addr,
 		Handler:           transport.Handler(),
@@ -29,7 +50,7 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	fmt.Printf("server listening on %s\n", *addr)
+	logger.Info("server listening", zap.String("addr", *addr))
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- httpServer.ListenAndServe()
@@ -43,16 +64,16 @@ func main() {
 		if err == nil || errors.Is(err, http.ErrServerClosed) {
 			return
 		}
-		fmt.Fprintf(os.Stderr, "server failed: %v\n", err)
+		logger.Error("server failed", zap.Error(err))
 		os.Exit(1)
 	case sig := <-sigCh:
-		fmt.Printf("received signal %s, shutting down\n", sig.String())
+		logger.Info("received shutdown signal", zap.String("signal", sig.String()))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := httpServer.Shutdown(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "server failed: %v\n", err)
+		logger.Error("server shutdown failed", zap.Error(err))
 		os.Exit(1)
 	}
 }

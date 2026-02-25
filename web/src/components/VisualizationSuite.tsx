@@ -11,7 +11,11 @@ interface VisualizationSuiteProps {
   snapshot: SnapshotDTO | null;
 }
 
-export function VisualizationSuite({ title, subtitle, snapshot }: VisualizationSuiteProps) {
+export function VisualizationSuite({
+  title,
+  subtitle,
+  snapshot,
+}: VisualizationSuiteProps) {
   return (
     <section className="viz-suite">
       <div className="viz-suite-header">

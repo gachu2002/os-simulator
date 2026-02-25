@@ -1,0 +1,17 @@
+-- name: GetMetadata :one
+SELECT key, value, created_at, updated_at
+FROM app_metadata
+WHERE key = $1
+LIMIT 1;
+
+-- name: ListMetadata :many
+SELECT key, value, created_at, updated_at
+FROM app_metadata
+ORDER BY key;
+
+-- name: UpsertMetadata :exec
+INSERT INTO app_metadata (key, value)
+VALUES ($1, $2)
+ON CONFLICT (key) DO UPDATE
+SET value = EXCLUDED.value,
+    updated_at = NOW();

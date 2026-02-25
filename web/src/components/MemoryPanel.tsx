@@ -18,7 +18,9 @@ export function MemoryPanel({ snapshot }: MemoryPanelProps) {
         <span>TLB slots: {tlbSlots}</span>
         <span>Faults NP: {faults?.not_present ?? 0}</span>
         <span>Faults Perm: {faults?.permission ?? 0}</span>
-        <span>TLB hit/miss: {faults?.tlb_hit ?? 0}/{faults?.tlb_miss ?? 0}</span>
+        <span>
+          TLB hit/miss: {faults?.tlb_hit ?? 0}/{faults?.tlb_miss ?? 0}
+        </span>
       </div>
 
       {rows.length === 0 ? (

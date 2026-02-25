@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestCommandValidationAndSequenceOrdering(t *testing.T) {
 
 	s := createSession(t, ts.URL, map[string]any{"seed": 9})
 	conn := dialWS(t, ts.URL, s.SessionID)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	connected := mustReadEvent(t, conn)
 	if connected.Sequence != 2 {
@@ -61,10 +60,7 @@ func TestCommandValidationAndSequenceOrdering(t *testing.T) {
 }
 
 func TestCORSPreflightAndHeaders(t *testing.T) {
-	os.Setenv("CORS_ALLOW_ORIGIN", "http://localhost:5173")
-	t.Cleanup(func() {
-		_ = os.Unsetenv("CORS_ALLOW_ORIGIN")
-	})
+	t.Setenv("CORS_ALLOW_ORIGIN", "http://localhost:5173")
 
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
@@ -80,7 +76,7 @@ func TestCORSPreflightAndHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("options request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusNoContent)
@@ -104,7 +100,7 @@ func TestErrorEnvelopeIncludesRequestID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusMethodNotAllowed)
 	}
@@ -131,7 +127,7 @@ func createSession(t *testing.T, baseURL string, payload map[string]any) CreateS
 	if err != nil {
 		t.Fatalf("create session request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("expected status %d got %d", http.StatusCreated, resp.StatusCode)
 	}
@@ -148,7 +144,7 @@ func createSession(t *testing.T, baseURL string, payload map[string]any) CreateS
 func runScenarioOverWS(t *testing.T, baseURL, sessionID string) string {
 	t.Helper()
 	conn := dialWS(t, baseURL, sessionID)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_ = mustReadEvent(t, conn)
 
