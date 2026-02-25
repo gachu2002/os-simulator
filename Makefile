@@ -1,12 +1,21 @@
 SHELL := /bin/bash
 
-.PHONY: fmt test test-deterministic lesson-pack web-lint web-typecheck web-test web-build ci release-check
+.PHONY: fmt lint test test-race test-deterministic test-coverage lesson-pack web-lint web-typecheck web-test web-build security ci release-check
 
 fmt:
 	gofmt -w .
 
+lint:
+	golangci-lint run
+
 test:
 	go test ./...
+
+test-race:
+	go test -race ./...
+
+test-coverage:
+	bash scripts/ci/check_go_coverage.sh
 
 test-deterministic:
 	go test ./internal/sim -run 'TestGoldenTraceHash|TestReplayFromLogMatchesOriginalHash|TestSyscallToIRQToWakeupFlowIsDeterministic'
@@ -27,7 +36,11 @@ web-test:
 web-build:
 	pnpm --dir web build
 
-ci: test test-deterministic lesson-pack web-lint web-typecheck web-test web-build
+security:
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	pnpm --dir web audit --prod --audit-level high
+
+ci: lint test test-deterministic test-race test-coverage lesson-pack web-lint web-typecheck web-test web-build
 
 release-check: ci
 	go build ./...

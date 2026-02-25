@@ -47,7 +47,6 @@ type Session struct {
 	engine  *sim.Engine
 	cfg     SessionConfig
 	nextSeq uint64
-	paused  bool
 }
 
 func (s *Session) ID() string {
@@ -68,6 +67,12 @@ func (s *Session) Apply(cmd Command) Event {
 		return s.errorEventLocked(err)
 	}
 	return s.snapshotEventLocked(cmd.Name)
+}
+
+func (s *Session) EmitError(message string) Event {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.errorEventLocked(fmt.Errorf("%s", message))
 }
 
 func (s *Session) applyLocked(cmd Command) error {
@@ -93,11 +98,9 @@ func (s *Session) applyLocked(cmd Command) error {
 		if cmd.Count <= 0 {
 			return fmt.Errorf("run requires positive count")
 		}
-		s.paused = false
 		simCmd.Name = "step"
 		return s.engine.Execute(simCmd)
 	case "pause":
-		s.paused = true
 		return nil
 	case "policy":
 		if cmd.Policy == "" {
@@ -108,7 +111,6 @@ func (s *Session) applyLocked(cmd Command) error {
 		}
 		return s.engine.Execute(simCmd)
 	case "reset":
-		s.paused = false
 		e := sim.NewEngine(s.cfg.Seed, s.cfg.CheckpointEvery)
 		e.ConfigureMemory(s.cfg.Frames, s.cfg.TLBEntries)
 		e.ConfigureDevices(s.cfg.DiskLatency, s.cfg.TerminalLatency)

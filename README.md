@@ -30,10 +30,14 @@ pnpm --dir web dev
 Use `make` targets:
 
 - `make fmt` - format Go code
+- `make lint` - run Go lint checks
 - `make test` - full tests
+- `make test-race` - race detector tests
+- `make test-coverage` - enforce package coverage targets
 - `make test-deterministic` - deterministic regression suite
 - `make lesson-pack` - lesson-pack analytics smoke
 - `make ci` - full CI-equivalent local run
+- `make security` - vulnerability and dependency audit checks
 - `make release-check` - CI checks + full build
 
 ## Observability and Profiling
@@ -53,6 +57,14 @@ go run ./cmd/simcli -program "ACCESS 0x0 r; ACCESS 0x1000 r; EXIT" -steps 12 -em
 ## Release Process
 
 See `docs/release-checklist.md`.
+
+## API and Engineering Docs
+
+- API reference: `docs/api.md`
+- Architecture: `docs/architecture.md`
+- ADR index: `docs/adr/README.md`
+- Contribution guide: `CONTRIBUTING.md`
+- Security policy: `SECURITY.md`
 
 ## Free Deploy + CD
 

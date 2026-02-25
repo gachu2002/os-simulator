@@ -16,6 +16,18 @@
 - deterministic replay hash validated by golden tests
 - deterministic regression suite enforced in CI
 
+## Boundary Contract
+
+- `internal/sim` and `internal/lessons` are domain core; they do not depend on transport or UI.
+- `internal/transport/realtime` adapts domain state to HTTP/WS contracts.
+- `web` consumes immutable DTO snapshots and never mutates simulator internals.
+
+## Transport Safety Baseline
+
+- request body limits and unknown-field rejection on write endpoints
+- CORS/WS origin controls through allowlist configuration
+- request correlation with `X-Request-ID`
+
 ## Observability Baseline
 
 - trace events emitted for kernel/VM/IO/FS milestones

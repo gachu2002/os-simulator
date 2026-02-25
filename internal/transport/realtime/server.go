@@ -1,11 +1,16 @@
 package realtime
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"os-simulator-plan/internal/lessons"
 	"os-simulator-plan/internal/sim"
@@ -18,6 +23,7 @@ type Server struct {
 	lessonMu     sync.Mutex
 	lessonEngine *lessons.Engine
 	upgrader     websocket.Upgrader
+	origins      map[string]struct{}
 }
 
 func NewServer(manager *SessionManager) *Server {
@@ -25,14 +31,16 @@ func NewServer(manager *SessionManager) *Server {
 }
 
 func NewServerWithLessons(manager *SessionManager, lessonEngine *lessons.Engine) *Server {
+	origins := allowedOriginsFromEnv(os.Getenv("CORS_ALLOW_ORIGIN"))
 	return &Server{
 		manager:      manager,
 		lessonEngine: lessonEngine,
+		origins:      origins,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
-			CheckOrigin: func(*http.Request) bool {
-				return true
+			CheckOrigin: func(r *http.Request) bool {
+				return isOriginAllowed(origins, r.Header.Get("Origin"))
 			},
 		},
 	}
@@ -45,7 +53,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/lessons", s.handleLessons)
 	mux.HandleFunc("/lessons/run", s.handleLessonRun)
 	mux.HandleFunc("/ws/", s.handleWS)
-	return withCORS(mux)
+	return withRequestID(withCORS(originsForMiddleware(s.origins), mux))
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
@@ -54,18 +62,21 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		respondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 	defer r.Body.Close()
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var cfg SessionConfig
-	if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil && err.Error() != "EOF" {
-		respondJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
+		respondError(w, r, http.StatusBadRequest, "invalid_body", "invalid JSON body")
 		return
 	}
 	session, err := s.manager.Create(cfg)
 	if err != nil {
-		respondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		respondError(w, r, http.StatusBadRequest, "invalid_session_config", err.Error())
 		return
 	}
 	ev := session.SnapshotEvent("init")
@@ -75,12 +86,12 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/ws/")
 	if id == "" {
-		respondJSON(w, http.StatusBadRequest, map[string]string{"error": "missing session id"})
+		respondError(w, r, http.StatusBadRequest, "missing_session_id", "missing session id")
 		return
 	}
 	session, ok := s.manager.Get(id)
 	if !ok {
-		respondJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+		respondError(w, r, http.StatusNotFound, "session_not_found", "session not found")
 		return
 	}
 	conn, err := s.upgrader.Upgrade(w, r, nil)
@@ -99,7 +110,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if req.Type != "command" {
-			if err := conn.WriteJSON(Event{Type: "session.error", SessionID: session.ID(), Error: "unsupported message type"}); err != nil {
+			if err := conn.WriteJSON(session.EmitError("unsupported message type")); err != nil {
 				return
 			}
 			continue
@@ -116,25 +127,96 @@ func respondJSON(w http.ResponseWriter, status int, payload any) {
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
-func withCORS(next http.Handler) http.Handler {
-	origin := os.Getenv("CORS_ALLOW_ORIGIN")
-	if origin == "" {
-		origin = "*"
-	}
+type apiError struct {
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+	RequestID string `json:"request_id,omitempty"`
+}
+
+func respondError(w http.ResponseWriter, r *http.Request, status int, code, message string) {
+	reqID, _ := requestIDFromContext(r.Context())
+	respondJSON(w, status, apiError{Code: code, Message: message, RequestID: reqID})
+}
+
+func withCORS(allowed map[string]struct{}, next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		origin := r.Header.Get("Origin")
+		if isOriginAllowed(allowed, origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Request-ID")
 		w.Header().Set("Vary", "Origin")
 
 		if r.Method == http.MethodOptions {
+			if origin != "" && !isOriginAllowed(allowed, origin) {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+type ctxKey string
+
+const requestIDKey ctxKey = "request_id"
+
+func withRequestID(next http.Handler) http.Handler {
+	var seq atomic.Uint64
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqID := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+		if reqID == "" {
+			reqID = fmt.Sprintf("req-%08d", seq.Add(1))
+		}
+		w.Header().Set("X-Request-ID", reqID)
+		ctx := context.WithValue(r.Context(), requestIDKey, reqID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func requestIDFromContext(ctx context.Context) (string, bool) {
+	v, ok := ctx.Value(requestIDKey).(string)
+	return v, ok
+}
+
+func allowedOriginsFromEnv(raw string) map[string]struct{} {
+	out := map[string]struct{}{}
+	if strings.TrimSpace(raw) == "" {
+		out["http://localhost:5173"] = struct{}{}
+		out["http://127.0.0.1:5173"] = struct{}{}
+		out["https://localhost:5173"] = struct{}{}
+		out["https://127.0.0.1:5173"] = struct{}{}
+		return out
+	}
+	for _, part := range strings.Split(raw, ",") {
+		origin := strings.TrimSpace(part)
+		if origin == "" {
+			continue
+		}
+		out[origin] = struct{}{}
+	}
+	return out
+}
+
+func originsForMiddleware(in map[string]struct{}) map[string]struct{} {
+	out := make(map[string]struct{}, len(in))
+	for k := range in {
+		out[k] = struct{}{}
+	}
+	return out
+}
+
+func isOriginAllowed(allowed map[string]struct{}, origin string) bool {
+	if origin == "" {
+		return true
+	}
+	_, ok := allowed[origin]
+	return ok
 }
 
 type LessonStageSummary struct {
@@ -200,7 +282,7 @@ type LessonRunResponse struct {
 
 func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		respondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -222,18 +304,21 @@ func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleLessonRun(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		respondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	defer r.Body.Close()
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req LessonRunRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		respondError(w, r, http.StatusBadRequest, "invalid_body", "invalid JSON body")
 		return
 	}
 	if req.LessonID == "" {
-		respondJSON(w, http.StatusBadRequest, map[string]string{"error": "lesson_id is required"})
+		respondError(w, r, http.StatusBadRequest, "invalid_lesson_request", "lesson_id is required")
 		return
 	}
 
@@ -241,7 +326,7 @@ func (s *Server) handleLessonRun(w http.ResponseWriter, r *http.Request) {
 	result, err := s.lessonEngine.RunStage(req.LessonID, req.StageIndex)
 	if err != nil {
 		s.lessonMu.Unlock()
-		respondJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		respondError(w, r, http.StatusBadRequest, "lesson_run_failed", err.Error())
 		return
 	}
 	analytics := s.lessonEngine.CompletionAnalytics()

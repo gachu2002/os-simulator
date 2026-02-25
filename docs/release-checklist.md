@@ -3,9 +3,13 @@
 ## Pre-Release
 
 - [ ] `make fmt`
+- [ ] `make lint`
 - [ ] `make test`
+- [ ] `make test-race`
+- [ ] `make test-coverage`
 - [ ] `make test-deterministic`
 - [ ] `make lesson-pack`
+- [ ] `make security`
 - [ ] `make release-check`
 - [ ] CI workflow `ci` green on main branch head
 

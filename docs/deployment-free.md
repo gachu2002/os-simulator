@@ -14,6 +14,7 @@ This guide uses:
    - **Branch**: `main`
    - **Build Command**: `go build -o server ./cmd/server`
    - **Start Command**: `./server -addr :$PORT`
+   - **Environment Variable**: `CORS_ALLOW_ORIGIN=https://<your-pages-domain>`
 3. Leave service type as free tier.
 4. Deploy and copy the backend URL (example: `https://os-sim-api.onrender.com`).
 
@@ -54,11 +55,12 @@ Example:
 
 Workflow file: `.github/workflows/deploy-smoke.yml`
 
-It verifies:
+It verifies (via `cmd/smokecheck`):
 
 - backend health endpoint: `GET /healthz`
 - backend lesson list: `GET /lessons`
 - backend lesson run: `POST /lessons/run`
+- backend realtime command path: WebSocket connect + `step` command
 - frontend availability: `GET /`
 
 Run it manually with **Actions -> deploy-smoke -> Run workflow**, or let it run on pushes to `main`.

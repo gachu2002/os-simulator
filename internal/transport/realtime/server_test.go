@@ -90,6 +90,37 @@ func TestCORSPreflightAndHeaders(t *testing.T) {
 	}
 }
 
+func TestErrorEnvelopeIncludesRequestID(t *testing.T) {
+	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
+	defer ts.Close()
+
+	req, err := http.NewRequest(http.MethodGet, ts.URL+"/sessions", nil)
+	if err != nil {
+		t.Fatalf("new request failed: %v", err)
+	}
+	req.Header.Set("X-Request-ID", "req-test-1")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusMethodNotAllowed)
+	}
+
+	var out map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if out["code"] != "method_not_allowed" {
+		t.Fatalf("code=%v want=method_not_allowed", out["code"])
+	}
+	if out["request_id"] != "req-test-1" {
+		t.Fatalf("request_id=%v want=req-test-1", out["request_id"])
+	}
+}
+
 func createSession(t *testing.T, baseURL string, payload map[string]any) CreateSessionResponse {
 	t.Helper()
 	b, err := json.Marshal(payload)

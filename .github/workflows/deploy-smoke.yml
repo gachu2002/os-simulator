@@ -13,6 +13,13 @@ jobs:
       BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
       FRONTEND_BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
       - name: Validate required variables
         run: |
           if [ -z "$BACKEND_BASE_URL" ]; then
@@ -24,17 +31,5 @@ jobs:
             exit 1
           fi
 
-      - name: Backend health check
-        run: curl -fsSL "$BACKEND_BASE_URL/healthz" > /dev/null
-
-      - name: Backend lessons list check
-        run: curl -fsSL "$BACKEND_BASE_URL/lessons" > /dev/null
-
-      - name: Backend lesson run check
-        run: |
-          curl -fsSL -X POST "$BACKEND_BASE_URL/lessons/run" \
-            -H "Content-Type: application/json" \
-            -d '{"lesson_id":"l01-sched-rr-basics","stage_index":0}' > /dev/null
-
-      - name: Frontend availability check
-        run: curl -fsSL "$FRONTEND_BASE_URL" > /dev/null
+      - name: End-to-end hosted smoke
+        run: go run ./cmd/smokecheck -backend "$BACKEND_BASE_URL" -frontend "$FRONTEND_BASE_URL"
