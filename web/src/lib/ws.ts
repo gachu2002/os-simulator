@@ -44,11 +44,17 @@ export function connectSessionSocket(
 }
 
 function toWebSocketURL(baseUrl: string, sessionID: string): string {
-  if (baseUrl.startsWith("https://")) {
-    return `${baseUrl.replace("https://", "wss://")}/ws/${sessionID}`;
+  const parsed = new URL(baseUrl);
+  if (parsed.protocol === "https:") {
+    parsed.protocol = "wss:";
+  } else if (parsed.protocol === "http:") {
+    parsed.protocol = "ws:";
+  } else {
+    throw new Error("base URL must start with http:// or https://");
   }
-  if (baseUrl.startsWith("http://")) {
-    return `${baseUrl.replace("http://", "ws://")}/ws/${sessionID}`;
-  }
-  throw new Error("base URL must start with http:// or https://");
+  const basePath = parsed.pathname.replace(/\/$/, "");
+  parsed.pathname = `${basePath}/ws/${sessionID}`;
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString();
 }

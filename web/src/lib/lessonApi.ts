@@ -3,6 +3,7 @@ import type {
   ProcessSnapshot,
   SchedulingMetrics,
 } from "./types";
+import { fetchJSON } from "./http";
 
 export interface LessonStageSummary {
   index: number;
@@ -61,11 +62,7 @@ export interface LessonRunResponse {
 }
 
 export async function fetchLessons(baseURL: string): Promise<LessonSummary[]> {
-  const response = await fetch(`${baseURL}/lessons`);
-  if (!response.ok) {
-    throw new Error(`load lessons failed with status ${response.status}`);
-  }
-  const payload = (await response.json()) as LessonsResponse;
+  const payload = await fetchJSON<LessonsResponse>(baseURL, "/lessons");
   return payload.lessons;
 }
 
@@ -74,13 +71,9 @@ export async function runLessonStage(
   lessonID: string,
   stageIndex: number,
 ): Promise<LessonRunResponse> {
-  const response = await fetch(`${baseURL}/lessons/run`, {
+  return fetchJSON<LessonRunResponse>(baseURL, "/lessons/run", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ lesson_id: lessonID, stage_index: stageIndex }),
   });
-  if (!response.ok) {
-    throw new Error(`run lesson failed with status ${response.status}`);
-  }
-  return (await response.json()) as LessonRunResponse;
 }

@@ -49,5 +49,4 @@ Use concise conventional-style prefixes:
 - Do not hand-edit generated files.
 - For SQL access layer changes, edit SQL under `db/` and run `make sqlc-generate`.
 - For new DB migrations, run `make db-create name=<migration_name>`.
-- For shadcn/ui components, run `make web-shadcn-add name=<component>`.
 - Include generated output in the same PR when source changes require regeneration.

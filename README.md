@@ -28,13 +28,14 @@ pnpm --dir=web run dev
 ## Tooling Baseline
 
 - Backend: `chi`, `pgx` + `sqlc`, `golang-migrate`, `zap`, `golangci-lint`, `air`
-- Frontend: `Vite`, `Tailwind CSS`, `shadcn/ui` scaffolding, `TanStack Query`, `ESLint` + `Prettier`, `Vitest`
+- Frontend: `Vite`, `Tailwind CSS`, `TanStack Query`, `ESLint` + `Prettier`, `Vitest`
 
 ## Stable Engineering Workflow
 
 Use `make` targets:
 
 - `make fmt` - format Go code
+- `make fmt-check` - verify Go formatting
 - `make lint` - run Go lint checks
 - `make test` - full tests
 - `make test-race` - race detector tests
@@ -42,9 +43,12 @@ Use `make` targets:
 - `make test-deterministic` - deterministic regression suite
 - `make lesson-pack` - lesson-pack analytics smoke
 - `make sqlc-generate` - generate typed DB access code from SQL
+- `make sqlc-verify` - verify generated DB code is up to date
+- `make ci-go` - Go CI-equivalent local run
+- `make ci-web` - web CI-equivalent local run
+- `make ci-security` - security CI-equivalent local run
 - `make db-up` / `make db-down` / `make db-status` - run local DB migrations
 - `make db-create name=add_feature` - create migration pair
-- `make web-shadcn-add name=button` - add shadcn/ui components via CLI
 - `make dev-server` - run backend with live reload via air
 - `make web-format-check` - run Prettier check for web sources
 - `make ci` - full CI-equivalent local run

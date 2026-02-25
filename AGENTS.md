@@ -21,7 +21,7 @@ Checked in repo:
 - Backend routing/logging: `chi` + `zap`
 - Backend data path scaffold: PostgreSQL + `pgx` + `sqlc` + `golang-migrate`
 - Backend dev reload: `air`
-- Frontend stack: `Vite` + `Tailwind CSS` + `shadcn/ui` scaffold + `TanStack Query`
+- Frontend stack: `Vite` + `Tailwind CSS` + `TanStack Query`
 - Frontend quality: `ESLint` + `Prettier` + `Vitest`
 
 ## Command Policy
@@ -51,7 +51,6 @@ Checked in repo:
 - Dev server: `pnpm --dir=web run dev`
 - Build: `pnpm --dir=web run build`
 - Preview: `pnpm --dir=web run preview`
-- Add shadcn component: `make web-shadcn-add name=button`
 
 ## Lint and Format
 
@@ -188,5 +187,4 @@ Checked in repo:
 - Do not hand-edit generated files when a framework/tool is the source of truth.
 - For SQL access layer changes: edit SQL in `db/query`/`db/schema`, then run `make sqlc-generate`.
 - For migrations: create new files via `make db-create name=<migration_name>`.
-- For shadcn/ui components: generate via `make web-shadcn-add name=<component>` (uses `shadcn@latest`).
 - If generated output changes are expected, include generated files in the same change.

@@ -1,11 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-
-import {
-  fetchLessons,
-  runLessonStage,
-  type LessonRunResponse,
-} from "../lib/lessonApi";
+import { useLessonRunner } from "../hooks/useLessonRunner";
+import type { LessonRunResponse } from "../lib/lessonApi";
 
 interface LessonRunnerPanelProps {
   baseURL: string;
@@ -16,94 +10,20 @@ export function LessonRunnerPanel({
   baseURL,
   onRunResult,
 }: LessonRunnerPanelProps) {
-  const [selectedLessonIDState, setSelectedLessonIDState] = useState("");
-  const [selectedStageIndexState, setSelectedStageIndexState] = useState(0);
-  const [runResult, setRunResult] = useState<LessonRunResponse | null>(null);
-  const [lastTraceHash, setLastTraceHash] = useState("");
-  const [determinismStatus, setDeterminismStatus] = useState<
-    "" | "stable" | "changed"
-  >("");
-  const [runError, setRunError] = useState("");
-
-  const lessonsQuery = useQuery({
-    queryKey: ["lessons", baseURL],
-    queryFn: () => fetchLessons(baseURL),
-  });
-
-  const lessons = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
-
-  const runStageMutation = useMutation({
-    mutationFn: ({
-      lessonID,
-      stageIndex,
-    }: {
-      lessonID: string;
-      stageIndex: number;
-    }) => runLessonStage(baseURL, lessonID, stageIndex),
-  });
-
-  const selectedLessonID = useMemo(() => {
-    if (lessons.length === 0) {
-      return "";
-    }
-    if (lessons.some((lesson) => lesson.id === selectedLessonIDState)) {
-      return selectedLessonIDState;
-    }
-    return lessons[0].id;
-  }, [lessons, selectedLessonIDState]);
-
-  const selectedLesson = useMemo(
-    () => lessons.find((lesson) => lesson.id === selectedLessonID) ?? null,
-    [lessons, selectedLessonID],
-  );
-
-  const selectedStageIndex = useMemo(() => {
-    if (!selectedLesson) {
-      return 0;
-    }
-    if (
-      selectedLesson.stages.some(
-        (stage) => stage.index === selectedStageIndexState,
-      )
-    ) {
-      return selectedStageIndexState;
-    }
-    return selectedLesson.stages[0]?.index ?? 0;
-  }, [selectedLesson, selectedStageIndexState]);
-
-  const errorMessage = useMemo(() => {
-    if (runError !== "") {
-      return runError;
-    }
-    return lessonsQuery.error instanceof Error
-      ? lessonsQuery.error.message
-      : "";
-  }, [lessonsQuery.error, runError]);
-
-  async function handleRun() {
-    if (!selectedLessonID) {
-      return;
-    }
-    setRunError("");
-    try {
-      const result = await runStageMutation.mutateAsync({
-        lessonID: selectedLessonID,
-        stageIndex: selectedStageIndex,
-      });
-      if (lastTraceHash !== "") {
-        setDeterminismStatus(
-          lastTraceHash === result.output.trace_hash ? "stable" : "changed",
-        );
-      }
-      setLastTraceHash(result.output.trace_hash);
-      setRunResult(result);
-      onRunResult?.(result);
-    } catch (err) {
-      setRunError(
-        err instanceof Error ? err.message : "failed to run lesson stage",
-      );
-    }
-  }
+  const {
+    lessons,
+    selectedLesson,
+    selectedLessonID,
+    selectedStageIndex,
+    runResult,
+    determinismStatus,
+    errorMessage,
+    isLessonsLoading,
+    isRunPending,
+    setSelectedStageIndexState,
+    handleLessonChange,
+    handleRun,
+  } = useLessonRunner({ baseURL, onRunResult });
 
   return (
     <section className="panel lesson-panel">
@@ -113,13 +33,8 @@ export function LessonRunnerPanel({
           Lesson
           <select
             value={selectedLessonID}
-            disabled={lessonsQuery.isLoading || lessons.length === 0}
-            onChange={(event) => {
-              const nextID = event.target.value;
-              setSelectedLessonIDState(nextID);
-              const stage = lessons.find((l) => l.id === nextID)?.stages[0];
-              setSelectedStageIndexState(stage?.index ?? 0);
-            }}
+            disabled={isLessonsLoading || lessons.length === 0}
+            onChange={(event) => handleLessonChange(event.target.value)}
           >
             {lessons.map((lesson) => (
               <option key={lesson.id} value={lesson.id}>
@@ -148,10 +63,10 @@ export function LessonRunnerPanel({
 
         <button
           type="button"
-          disabled={runStageMutation.isPending || !selectedLessonID}
+          disabled={isRunPending || !selectedLessonID}
           onClick={handleRun}
         >
-          {runStageMutation.isPending ? "Running..." : "Run Stage"}
+          {isRunPending ? "Running..." : "Run Stage"}
         </button>
       </div>
 

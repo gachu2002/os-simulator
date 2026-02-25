@@ -1,95 +1,35 @@
-import { useMutation } from "@tanstack/react-query";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useState } from "react";
 
 import { ControlBar } from "./components/ControlBar";
 import { EventLog } from "./components/EventLog";
 import { LessonRunnerPanel } from "./components/LessonRunnerPanel";
 import { StatusCards } from "./components/StatusCards";
 import { VisualizationSuite } from "./components/VisualizationSuite";
-import { createSession } from "./lib/api";
+import { useSession } from "./hooks/useSession";
 import type { LessonRunResponse } from "./lib/lessonApi";
-import type { Command } from "./lib/types";
-import { connectSessionSocket, type SessionSocket } from "./lib/ws";
 import { snapshotFromLessonRun } from "./state/lessonSnapshot";
-import { initialSessionState, sessionReducer } from "./state/sessionReducer";
 
 export function App() {
-  const [state, dispatch] = useReducer(sessionReducer, initialSessionState);
-  const [baseURL, setBaseURL] = useState(defaultBaseURL());
-  const [seed, setSeed] = useState(1);
-  const [policy, setPolicy] = useState<"fifo" | "rr" | "mlfq">("rr");
-  const [quantum, setQuantum] = useState(2);
+  const {
+    state,
+    baseURL,
+    seed,
+    policy,
+    quantum,
+    canSend,
+    isCreatingSession,
+    setBaseURL,
+    setSeed,
+    setPolicy,
+    setQuantum,
+    handleCreateSession,
+    handleCommand,
+  } = useSession();
   const [lessonSnapshot, setLessonSnapshot] = useState<ReturnType<
     typeof snapshotFromLessonRun
   > | null>(null);
   const [lessonTitle, setLessonTitle] = useState("");
   const [compareMode, setCompareMode] = useState(true);
-  const socketRef = useRef<SessionSocket | null>(null);
-
-  const createSessionMutation = useMutation({
-    mutationFn: () =>
-      createSession(baseURL, {
-        seed,
-        policy,
-        quantum,
-      }),
-  });
-
-  const canSend = useMemo(
-    () => Boolean(state.sessionID && state.connected),
-    [state.connected, state.sessionID],
-  );
-
-  useEffect(() => {
-    return () => {
-      socketRef.current?.close();
-      socketRef.current = null;
-    };
-  }, []);
-
-  async function handleCreateSession() {
-    dispatch({ type: "error", message: "" });
-    try {
-      socketRef.current?.close();
-      socketRef.current = null;
-
-      const created = await createSessionMutation.mutateAsync();
-
-      dispatch({
-        type: "session.created",
-        sessionID: created.session_id,
-        snapshot: created.snapshot,
-      });
-
-      const socket = connectSessionSocket(
-        baseURL,
-        created.session_id,
-        (event) => {
-          dispatch({ type: "event.received", event });
-          dispatch({ type: "socket.connected" });
-        },
-        (error) => {
-          dispatch({ type: "socket.disconnected" });
-          dispatch({ type: "error", message: error.message });
-        },
-      );
-
-      socketRef.current = socket;
-    } catch (error) {
-      dispatch({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "failed to create session",
-      });
-    }
-  }
-
-  function handleCommand(command: Command) {
-    if (!canSend) {
-      return;
-    }
-    socketRef.current?.sendCommand(command);
-  }
 
   function handleLessonRunResult(result: LessonRunResponse) {
     setLessonSnapshot(snapshotFromLessonRun(result));
@@ -127,10 +67,10 @@ export function App() {
           </label>
           <button
             type="button"
-            disabled={createSessionMutation.isPending}
+            disabled={isCreatingSession}
             onClick={handleCreateSession}
           >
-            {createSessionMutation.isPending ? "Creating..." : "Create Session"}
+            {isCreatingSession ? "Creating..." : "Create Session"}
           </button>
         </div>
         {state.error ? <p className="error">{state.error}</p> : null}
@@ -189,16 +129,4 @@ export function App() {
       <EventLog logs={state.logs} />
     </main>
   );
-}
-
-function defaultBaseURL(): string {
-  const envURL = import.meta.env.VITE_API_BASE_URL;
-  if (typeof envURL === "string" && envURL.trim() !== "") {
-    return envURL.trim();
-  }
-  if (typeof window === "undefined") {
-    return "http://localhost:8080";
-  }
-  const host = window.location.hostname || "localhost";
-  return `http://${host}:8080`;
 }

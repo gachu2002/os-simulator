@@ -7,10 +7,6 @@
     "skipLibCheck": true,
     "types": ["vite/client", "node"],
     "moduleResolution": "Bundler",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
     "resolveJsonModule": true,
     "allowImportingTsExtensions": false,
     "isolatedModules": true,

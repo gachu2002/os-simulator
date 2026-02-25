@@ -1,13 +1,9 @@
 package sim
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"math/rand"
-	"sort"
 	"strconv"
-	"strings"
 )
 
 type procStats struct {
@@ -175,79 +171,6 @@ func (e *Engine) wakeBlockedProcesses() {
 	}
 }
 
-func (e *Engine) handleEvent(ev Event) {
-	if !strings.HasPrefix(ev.Kind, "irq.") {
-		return
-	}
-	requestID, ok := parseRequestID(ev.Data)
-	if !ok {
-		return
-	}
-	req, ok := e.devices.Complete(requestID)
-	if !ok {
-		return
-	}
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "irq.handle", Data: fmt.Sprintf("req=%d pid=%d device=%s", req.ID, req.PID, req.Device)})
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "io.complete", Data: fmt.Sprintf("req=%d pid=%d fd=%d op=%s n=%d", req.ID, req.PID, req.FD, req.Op, req.Bytes)})
-	if of, ok := procOpenFile(e.procs, req.PID, req.FD); ok {
-		if req.Op == SysRead {
-			data, blocks, nextOffset, err := e.fs.ReadInode(of.InodeID, req.Bytes, of.Offset)
-			if err == nil {
-				of.Offset = nextOffset
-				setProcOpenFile(e.procs, req.PID, req.FD, of)
-				e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "fs.read", Data: fmt.Sprintf("pid=%d fd=%d bytes=%d", req.PID, req.FD, len(data))})
-				e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "fs.blockmap", Data: fmt.Sprintf("pid=%d fd=%d blocks=%v", req.PID, req.FD, blocks)})
-			}
-		}
-		if req.Op == SysWrite {
-			payload := []byte(strings.Repeat("w", req.Bytes))
-			written, blocks, nextOffset := e.fs.WriteInode(of.InodeID, payload, of.Offset)
-			of.Offset = nextOffset
-			setProcOpenFile(e.procs, req.PID, req.FD, of)
-			e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "fs.write", Data: fmt.Sprintf("pid=%d fd=%d bytes=%d", req.PID, req.FD, written)})
-			e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "fs.blockmap", Data: fmt.Sprintf("pid=%d fd=%d blocks=%v", req.PID, req.FD, blocks)})
-		}
-	}
-
-	proc, ok := e.procs.Get(req.PID)
-	if !ok || proc.State != ProcStateBlocked || proc.BlockedOn != "io" {
-		return
-	}
-	_ = proc.transition(ProcStateReady)
-	proc.BlockedOn = ""
-	proc.BlockedUntil = 0
-	e.scheduler.OnReady(proc.PID, true)
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "proc.wakeup", Data: fmt.Sprintf("pid=%d source=irq", proc.PID)})
-}
-
-func parseRequestID(data string) (int, bool) {
-	if !strings.HasPrefix(data, "req=") {
-		return 0, false
-	}
-	v, err := strconv.Atoi(strings.TrimPrefix(data, "req="))
-	if err != nil {
-		return 0, false
-	}
-	return v, true
-}
-
-func procOpenFile(pt *ProcessTable, pid, fd int) (OpenFile, bool) {
-	proc, ok := pt.Get(pid)
-	if !ok {
-		return OpenFile{}, false
-	}
-	of, ok := proc.OpenFiles[fd]
-	return of, ok
-}
-
-func setProcOpenFile(pt *ProcessTable, pid, fd int, of OpenFile) {
-	proc, ok := pt.Get(pid)
-	if !ok {
-		return
-	}
-	proc.OpenFiles[fd] = of
-}
-
 func (e *Engine) accumulateWaitTicks() {
 	for _, snap := range e.procs.AllSnapshots() {
 		if snap.State != ProcStateReady {
@@ -352,81 +275,6 @@ func (e *Engine) executeInstruction(proc *Process) error {
 	}
 }
 
-func (e *Engine) executeSyscall(proc *Process, name string, arg int, argText string) error {
-	proc.Trap.Mode = "kernel"
-	proc.Trap.SyscallNo = syscallNumber(name)
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "trap.enter", Data: fmt.Sprintf("pid=%d sys=%s", proc.PID, name)})
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "trap.save", Data: fmt.Sprintf("pid=%d pc=%d", proc.PID, proc.Trap.PC)})
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "sys.dispatch", Data: fmt.Sprintf("pid=%d sys=%s", proc.PID, name)})
-
-	result, err := e.dispatcher.Handle(proc, name, arg, argText)
-	if err != nil {
-		return err
-	}
-
-	if result.Blocked {
-		if result.AsyncDevice != "" {
-			req := e.devices.Submit(e.clock, proc.PID, result.FD, result.AsyncDevice, result.AsyncOp, result.AsyncBytes)
-			e.Schedule(req.CompleteAt, IRQEventKind(req.Device), fmt.Sprintf("req=%d", req.ID))
-			proc.BlockedOn = "io"
-			proc.BlockedUntil = req.CompleteAt
-			e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "io.submit", Data: fmt.Sprintf("req=%d pid=%d fd=%d device=%s op=%s n=%d done=%d", req.ID, req.PID, req.FD, req.Device, req.Op, req.Bytes, req.CompleteAt)})
-		} else {
-			proc.BlockedOn = "sleep"
-			proc.BlockedUntil = e.clock + result.SleepTicks
-			e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "sys.sleep", Data: fmt.Sprintf("pid=%d until=%d", proc.PID, proc.BlockedUntil)})
-		}
-		_ = proc.transition(ProcStateBlocked)
-		e.scheduler.OnBlock(proc.PID)
-		e.runningPID = 0
-	}
-
-	if name == SysRead {
-		e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "sys.read", Data: fmt.Sprintf("pid=%d n=%d", proc.PID, arg)})
-	}
-	if name == SysWrite {
-		e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "sys.write", Data: fmt.Sprintf("pid=%d n=%d", proc.PID, arg)})
-	}
-	if name == SysOpen {
-		e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "sys.open", Data: fmt.Sprintf("pid=%d fd=%d path=%s", proc.PID, result.ReturnValue, result.Path)})
-		e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "fs.path", Data: fmt.Sprintf("pid=%d path=%s traversal=%v", proc.PID, result.Path, result.Traversal)})
-	}
-
-	if result.Exit {
-		e.finishProcess(proc)
-		e.runningPID = 0
-	}
-
-	if !result.Blocked && !result.Exit {
-		e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "trap.return", Data: fmt.Sprintf("pid=%d ret=%d", proc.PID, result.ReturnValue)})
-		proc.Trap.Mode = "user"
-		proc.Trap.SyscallNo = 0
-		return nil
-	}
-
-	e.trace = append(e.trace, TraceEvent{Tick: e.clock, Kind: "trap.return", Data: fmt.Sprintf("pid=%d ret=%d", proc.PID, result.ReturnValue)})
-	proc.Trap.Mode = "user"
-	proc.Trap.SyscallNo = 0
-	return nil
-}
-
-func syscallNumber(name string) int {
-	switch name {
-	case SysOpen:
-		return 2
-	case SysRead:
-		return 3
-	case SysWrite:
-		return 4
-	case SysSleep:
-		return 5
-	case SysExit:
-		return 6
-	default:
-		return 0
-	}
-}
-
 func (e *Engine) finishProcess(proc *Process) {
 	_ = proc.transition(ProcStateTerminated)
 	e.scheduler.OnExit(proc.PID)
@@ -470,68 +318,10 @@ func (e *Engine) ProcessTable() []ProcessSnapshot {
 	return e.procs.AllSnapshots()
 }
 
-func (e *Engine) SchedulingMetrics() SchedulingMetrics {
-	table := e.procs.AllSnapshots()
-	metrics := SchedulingMetrics{
-		Policy:     e.scheduler.Policy(),
-		Quantum:    e.scheduler.Quantum(),
-		TotalTicks: e.clock,
-		Gantt:      append([]GanttSlice(nil), e.gantt...),
-	}
-
-	procMetrics := make([]ProcessMetric, 0, len(table))
-	var totalResp Tick
-	var totalTurn Tick
-	var fairSum float64
-	var fairSq float64
-	for _, snap := range table {
-		p, _ := e.procs.Get(snap.PID)
-		st := e.ensureStats(snap.PID)
-		resp := Tick(0)
-		if st.hasDispatched {
-			resp = st.firstDispatch - p.SpawnTick
-		}
-		turn := Tick(0)
-		if st.completed {
-			turn = st.completedAt - p.SpawnTick
-			metrics.CompletedProcesses++
-		}
-		procMetrics = append(procMetrics, ProcessMetric{PID: p.PID, Name: p.Name, ResponseTime: resp, Turnaround: turn, RunTicks: st.runTicks, WaitTicks: st.waitTicks})
-		totalResp += resp
-		totalTurn += turn
-		r := float64(st.runTicks)
-		fairSum += r
-		fairSq += r * r
-	}
-	sort.Slice(procMetrics, func(i, j int) bool { return procMetrics[i].PID < procMetrics[j].PID })
-	metrics.Processes = procMetrics
-	if len(procMetrics) > 0 {
-		metrics.AvgResponseTime = float64(totalResp) / float64(len(procMetrics))
-		metrics.AvgTurnaroundTime = float64(totalTurn) / float64(len(procMetrics))
-	}
-	if e.clock > 0 {
-		metrics.ThroughputPer100Tick = float64(metrics.CompletedProcesses) * 100 / float64(e.clock)
-	}
-	if fairSq > 0 && len(procMetrics) > 0 {
-		n := float64(len(procMetrics))
-		metrics.FairnessJainIndex = (fairSum * fairSum) / (n * fairSq)
-	}
-	return metrics
-}
-
 func (e *Engine) MemoryView() MemorySnapshot {
 	return e.memory.Snapshot()
 }
 
 func (e *Engine) ValidateFilesystem() error {
 	return e.fs.Invariants()
-}
-
-func TraceHash(trace []TraceEvent) string {
-	b := strings.Builder{}
-	for _, ev := range trace {
-		fmt.Fprintf(&b, "%d|%d|%s|%s\n", ev.Tick, ev.Sequence, ev.Kind, ev.Data)
-	}
-	sum := sha256.Sum256([]byte(b.String()))
-	return hex.EncodeToString(sum[:])
 }

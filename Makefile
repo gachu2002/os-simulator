@@ -5,12 +5,19 @@ MIGRATE := go run github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 SQLC := go run github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 AIR := go run github.com/air-verse/air@latest
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-SHADCN := pnpm -C web dlx shadcn@latest
 
-.PHONY: fmt lint test test-race test-deterministic test-coverage lesson-pack web-format-check web-lint web-typecheck web-test web-build security ci release-check sqlc-generate db-up db-down db-status db-create dev-server web-shadcn-add
+.PHONY: fmt fmt-check lint test test-race test-deterministic test-coverage lesson-pack web-format-check web-lint web-typecheck web-test web-build security ci-go ci-web ci-security ci release-check sqlc-generate sqlc-verify db-up db-down db-status db-create dev-server
 
 fmt:
 	gofmt -w .
+
+fmt-check:
+	@files=$(gofmt -l .); \
+	if [ -n "$$files" ]; then \
+		echo "The following files are not gofmt-formatted:"; \
+		echo "$$files"; \
+		exit 1; \
+	fi
 
 lint:
 	$(GOLANGCI_LINT) run
@@ -50,13 +57,22 @@ security:
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	pnpm --dir=web audit --prod --audit-level high
 
-ci: lint test test-deterministic test-race test-coverage lesson-pack web-lint web-typecheck web-test web-build
+ci-go: fmt-check lint sqlc-verify test test-deterministic test-race test-coverage lesson-pack
+
+ci-web: web-lint web-typecheck web-test web-build
+
+ci-security: security
+
+ci: ci-go ci-web
 
 release-check: ci
 	go build ./...
 
 sqlc-generate:
 	$(SQLC) generate -f sqlc.yaml
+
+sqlc-verify: sqlc-generate
+	git diff --exit-code -- internal/db/sqlc
 
 db-up:
 	$(MIGRATE) -path db/migrations -database "$(DB_URL)" up
@@ -73,7 +89,3 @@ db-create:
 
 dev-server:
 	$(AIR) -c .air.toml
-
-web-shadcn-add:
-	@test -n "$(name)" || (printf "usage: make web-shadcn-add name=button\n" && exit 1)
-	$(SHADCN) add --yes "$(name)"

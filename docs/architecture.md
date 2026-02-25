@@ -17,7 +17,7 @@
 - backend server logging uses structured `zap`
 - DB workflow uses `golang-migrate` + `sqlc` with PostgreSQL/pgx
 - web client HTTP state uses `TanStack Query`
-- web styling baseline uses `Tailwind CSS` + `shadcn/ui` scaffolding
+- web styling baseline uses `Tailwind CSS`
 
 ## Determinism Contract
 
