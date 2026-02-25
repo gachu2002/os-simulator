@@ -17,14 +17,14 @@
 
 - [ ] `simcli` binary runs a basic syscall scenario
 - [ ] replay hash remains stable for golden scenario
-- [ ] lesson pack analytics reports 20/20 completion in smoke run
+- [ ] lesson pack analytics reports 60/60 stage completion in smoke run
 - [ ] `cmd/server` starts and responds on `/healthz`
 - [ ] web build artifact (`web/dist`) is generated and deployable
-- [ ] lesson runner API paths (`/lessons`, `/lessons/run`) respond successfully
+- [ ] lesson API paths (`/lessons`, `/lessons/run`, `/lessons/progress`) respond successfully
 
 ## Deployment Smoke (Hosted)
 
-- [ ] Backend hosted URL passes `/healthz`, `/lessons`, and `/lessons/run` checks
+- [ ] Backend hosted URL passes `/healthz`, `/lessons`, `/lessons/run`, and `/lessons/progress` checks
 - [ ] Frontend hosted URL serves the app shell successfully
 - [ ] GitHub workflow `deploy-smoke` passes on `main`
 

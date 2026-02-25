@@ -1,6 +1,7 @@
 package lessons
 
 import (
+	"fmt"
 	"testing"
 
 	"os-simulator-plan/internal/sim"
@@ -15,43 +16,51 @@ func TestDefaultCatalogHasTwentyLessons(t *testing.T) {
 
 func TestScenarioLessonsPassWithExpectedFeedbackKeys(t *testing.T) {
 	e := NewEngine()
-	ids := []string{
+	orderedIDs := []string{
 		"l01-sched-rr-basics",
+		"l02-sched-fifo-baseline",
+		"l03-sched-mlfq-balance",
 		"l04-response-under-rr",
+		"l05-throughput-shared-cpu",
+		"l06-preemption-check",
 		"l07-vm-fault-sequence",
+		"l08-vm-pressure-repeat",
 		"l09-vm-tlb-activity",
+		"l10-vm-replacement-fifo",
+		"l11-vm-mixed-access",
 		"l12-irq-wakeup-read",
+		"l13-terminal-write-irq",
+		"l14-sleep-wakeup",
+		"l15-mixed-blocking",
 		"l16-fs-open-traversal",
-		"l20-fs-invariants",
 	}
-	for _, id := range ids {
-		res, err := e.RunStage(id, 0)
-		if err != nil {
-			t.Fatalf("run stage %s failed: %v", id, err)
+	for _, id := range orderedIDs {
+		if err := runLessonPath(e, id); err != nil {
+			t.Fatalf("run lesson path %s failed: %v", id, err)
 		}
-		if !res.Passed {
-			t.Fatalf("lesson %s should pass, got feedback=%s", id, res.FeedbackKey)
-		}
-		if res.FeedbackKey != "stage.s1.passed" {
-			t.Fatalf("lesson %s feedback=%s want=stage.s1.passed", id, res.FeedbackKey)
+	}
+
+	for _, stageID := range []string{"s1", "s2", "s3"} {
+		if !e.progress.Get("l16-fs-open-traversal", stageID).Completed {
+			t.Fatalf("expected stage %s completion recorded", stageID)
 		}
 	}
 }
 
 func TestCompletionAnalyticsAndPilotChecklist(t *testing.T) {
 	e := NewEngine()
-	for _, id := range []string{"l01-sched-rr-basics", "l07-vm-fault-sequence", "l12-irq-wakeup-read", "l16-fs-open-traversal"} {
-		if _, err := e.RunStage(id, 0); err != nil {
-			t.Fatalf("run stage %s failed: %v", id, err)
+	for _, id := range []string{"l01-sched-rr-basics", "l02-sched-fifo-baseline", "l03-sched-mlfq-balance", "l04-response-under-rr"} {
+		if err := runLessonPath(e, id); err != nil {
+			t.Fatalf("run lesson path %s failed: %v", id, err)
 		}
 	}
 
 	a := e.CompletionAnalytics()
-	if a.TotalStages != 20 {
-		t.Fatalf("total stages=%d want=20", a.TotalStages)
+	if a.TotalStages != 60 {
+		t.Fatalf("total stages=%d want=60", a.TotalStages)
 	}
-	if a.CompletedStages != 4 {
-		t.Fatalf("completed stages=%d want=4", a.CompletedStages)
+	if a.CompletedStages != 12 {
+		t.Fatalf("completed stages=%d want=12", a.CompletedStages)
 	}
 	if len(a.ModuleBreakdown) != 4 {
 		t.Fatalf("module breakdown count=%d want=4", len(a.ModuleBreakdown))
@@ -59,6 +68,64 @@ func TestCompletionAnalyticsAndPilotChecklist(t *testing.T) {
 	if a.PilotChecklistOK {
 		t.Fatalf("pilot checklist should not be fully complete for partial run")
 	}
+}
+
+func TestPrerequisiteGateBlocksOutOfOrderStage(t *testing.T) {
+	e := NewEngine()
+	if _, err := e.RunStage("l07-vm-fault-sequence", 0); err == nil {
+		t.Fatalf("expected prerequisite failure for l07 stage s1")
+	}
+}
+
+func TestProgressPersistenceRoundTrip(t *testing.T) {
+	store := &fakeProgressPersistence{snapshot: map[string]StageProgress{}}
+	e := NewEngineWithCatalogAndPersistence(DefaultCatalog(), store)
+
+	for _, lessonID := range []string{"l01-sched-rr-basics", "l02-sched-fifo-baseline", "l03-sched-mlfq-balance", "l04-response-under-rr", "l05-throughput-shared-cpu", "l06-preemption-check"} {
+		for idx := 0; idx < 3; idx++ {
+			if _, err := e.RunStage(lessonID, idx); err != nil {
+				t.Fatalf("run stage %s[%d] failed: %v", lessonID, idx, err)
+			}
+		}
+	}
+
+	reloaded := NewEngineWithCatalogAndPersistence(DefaultCatalog(), store)
+	if _, err := reloaded.RunStage("l07-vm-fault-sequence", 0); err != nil {
+		t.Fatalf("expected l07 stage 0 to be unlocked after reload: %v", err)
+	}
+}
+
+func runLessonPath(e *Engine, lessonID string) error {
+	for idx := 0; idx < 3; idx++ {
+		res, err := e.RunStage(lessonID, idx)
+		if err != nil {
+			return err
+		}
+		if !res.Passed {
+			return fmt.Errorf("stage index %d failed with feedback %s", idx, res.FeedbackKey)
+		}
+	}
+	return nil
+}
+
+type fakeProgressPersistence struct {
+	snapshot map[string]StageProgress
+}
+
+func (f *fakeProgressPersistence) Load() (map[string]StageProgress, error) {
+	out := make(map[string]StageProgress, len(f.snapshot))
+	for key, stage := range f.snapshot {
+		out[key] = stage
+	}
+	return out, nil
+}
+
+func (f *fakeProgressPersistence) Save(stages map[string]StageProgress) error {
+	f.snapshot = make(map[string]StageProgress, len(stages))
+	for key, stage := range stages {
+		f.snapshot[key] = stage
+	}
+	return nil
 }
 
 func TestHintProgressionLevels(t *testing.T) {

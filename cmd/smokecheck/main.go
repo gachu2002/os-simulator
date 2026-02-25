@@ -39,6 +39,9 @@ func main() {
 	if err := postOK(client, *backend+"/lessons/run", map[string]any{"lesson_id": "l01-sched-rr-basics", "stage_index": 0}); err != nil {
 		fatalf("lesson run failed: %v", err)
 	}
+	if err := getOK(client, *backend+"/lessons/progress"); err != nil {
+		fatalf("lesson progress failed: %v", err)
+	}
 
 	sessionID, err := createSession(client, *backend)
 	if err != nil {

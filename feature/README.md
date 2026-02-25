@@ -1,6 +1,6 @@
 # Feature Pack
 
-Concise, diagram-first snapshot of the current system.
+Concise, diagram-first snapshot of the current system and staged learning flow.
 
 ## Files
 

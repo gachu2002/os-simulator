@@ -45,6 +45,7 @@ func (s *Server) Handler() http.Handler {
 	router.HandleFunc("/sessions", s.handleSessions)
 	router.HandleFunc("/lessons", s.handleLessons)
 	router.HandleFunc("/lessons/run", s.handleLessonRun)
+	router.HandleFunc("/lessons/progress", s.handleLessonProgress)
 	router.HandleFunc("/ws/{id}", s.handleWS)
 	return withRequestID(withCORS(s.origins, router))
 }

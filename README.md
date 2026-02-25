@@ -7,7 +7,9 @@ Deterministic OSTEP-aligned simulator core implemented in Go with:
 - syscall/trap path with async device interrupts
 - virtual memory (VA->PA, TLB, faults, FIFO replacement)
 - filesystem path traversal + block mapping
-- lesson engine + 20-lesson OSTEP pack with analytics
+- lesson engine + 20 lessons / 60 stages with stage missions (observe -> diagnose -> apply)
+- prerequisite-gated curriculum path (CPU -> Memory -> Concurrency -> Persistence)
+- progress analytics + weak-concept signals (persisted when `DATABASE_URL` is set)
 
 ## Quick Start
 
@@ -17,13 +19,20 @@ go run ./cmd/simcli -program "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYS
 go run ./cmd/simcli -run-lesson-pack
 ```
 
-## Realtime Server + Web UI (Milestone 12)
+## Realtime Server + Web UI
 
 ```bash
 go run ./cmd/server -addr :8080
 pnpm --dir=web install
 pnpm --dir=web run dev
 ```
+
+Web routes:
+
+- `/path`: guided lessons with stage mission replay comparison
+- `/sandbox`: free deterministic simulation controls
+- `/challenge`: live controls + stage mission validation
+- `/progress`: persisted completion analytics and weak concepts
 
 ## Tooling Baseline
 
@@ -77,6 +86,7 @@ See `docs/release-checklist.md`.
 
 - API reference: `docs/api.md`
 - Architecture: `docs/architecture.md`
+- Learning architecture: `docs/learning-architecture.md`
 - ADR index: `docs/adr/README.md`
 - Contribution guide: `CONTRIBUTING.md`
 - Security policy: `SECURITY.md`

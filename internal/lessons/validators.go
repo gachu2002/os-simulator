@@ -35,6 +35,12 @@ func validate(output StageOutput, v ValidatorSpec) (bool, string) {
 			return false, fmt.Sprintf("fault %s got=%v want=%v", v.Key, got, int(v.Number))
 		}
 		return true, ""
+	case "fault_lte":
+		got, ok := faultValue(output, v.Key)
+		if !ok || got > int(v.Number) {
+			return false, fmt.Sprintf("fault %s got=%v want<=%v", v.Key, got, int(v.Number))
+		}
+		return true, ""
 	case "fs_ok":
 		if !output.FilesystemOK {
 			return false, "filesystem invariants failed"

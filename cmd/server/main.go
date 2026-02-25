@@ -29,7 +29,6 @@ func main() {
 	}()
 
 	manager := realtime.NewSessionManager()
-	transport := realtime.NewServer(manager)
 	startupCtx, startupCancel := context.WithTimeout(context.Background(), 3*time.Second)
 	pool, err := db.NewPoolFromEnv(startupCtx, logger)
 	startupCancel()
@@ -40,6 +39,9 @@ func main() {
 	if pool != nil {
 		defer pool.Close()
 	}
+
+	lessonEngine := realtime.NewLessonEngineWithPersistence(pool)
+	transport := realtime.NewServerWithLessons(manager, lessonEngine)
 
 	httpServer := &http.Server{
 		Addr:              *addr,

@@ -3,13 +3,13 @@
 ## Core Packages
 
 - `internal/sim`: deterministic simulator core, schedulers, VM, syscall path, devices/IRQs, filesystem, replay
-- `internal/lessons`: lesson DSL/catalog, validators, hint progression, progress/analytics
-- `internal/transport/realtime`: HTTP + WebSocket session transport, command validation, immutable snapshot DTO stream
-- `internal/platform/db`: optional Postgres pool bootstrap (`pgxpool`) for scaffolded persistence wiring
+- `internal/lessons`: staged mission catalog (observe/diagnose/apply), prerequisite gates, validators, hint progression, progress/analytics
+- `internal/transport/realtime`: HTTP + WebSocket transport for sessions, lessons, and persisted lesson progress analytics
+- `internal/platform/db`: Postgres pool bootstrap (`pgxpool`) used by optional lesson-progress persistence
 - `internal/db/sqlc`: generated typed query layer from `sqlc` config and SQL files
 - `cmd/simcli`: headless runner for simulation, replay, lesson execution, and analytics
 - `cmd/server`: realtime transport server entrypoint for browser sessions
-- `web`: React + TypeScript control UI for session creation, run/pause/step/reset, and event log/status panels
+- `web`: React + TypeScript UI with mode routes (`/path`, `/sandbox`, `/challenge`, `/progress`) over deterministic DTO snapshots
 
 ## Tooling and Runtime Adapters
 
@@ -40,6 +40,6 @@
 
 ## Observability Baseline
 
-- trace events emitted for kernel/VM/IO/FS milestones
+- trace events emitted for kernel/VM/IO/FS events
 - lesson-pack analytics available from CLI
 - optional CPU profile and runtime trace capture via CLI flags

@@ -73,6 +73,30 @@ body {
   padding: 0.75rem 0.25rem;
 }
 
+.mode-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.mode-link {
+  text-decoration: none;
+  text-transform: capitalize;
+  color: #214d66;
+  border: 1px solid #b6c9d4;
+  border-radius: 999px;
+  padding: 0.3rem 0.68rem;
+  background: #eef4f8;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.mode-link.active {
+  color: #ffffff;
+  background: #1f4d67;
+  border-color: #1f4d67;
+}
+
 .hero h1 {
   margin: 0;
   font-size: clamp(1.8rem, 4vw, 2.7rem);
@@ -290,6 +314,17 @@ button:disabled {
 .compare-panel input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
+}
+
+.progress-panel h2 {
+  margin-top: 0;
+  font-family: "Georgia", "Times New Roman", serif;
+}
+
+.progress-panel ul {
+  margin: 0.6rem 0 0;
+  padding-left: 1rem;
+  color: var(--muted);
 }
 
 .process-panel {
