@@ -32,7 +32,12 @@ jobs:
       - name: GolangCI-Lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61
+          version: v1.64.8
+
+      - name: Verify sqlc generated code is up to date
+        run: |
+          make sqlc-generate
+          git diff --exit-code -- internal/db/sqlc
 
   go-test:
     runs-on: ubuntu-latest
@@ -83,22 +88,22 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm eslint .
+        run: pnpm run lint
 
       - name: Typecheck
-        run: pnpm tsc --noEmit
+        run: pnpm run typecheck
 
       - name: Unit tests
-        run: pnpm vitest run
+        run: pnpm run test
 
       - name: Build
-        run: pnpm build
+        run: pnpm run build
 
   security:
     runs-on: ubuntu-latest
@@ -124,7 +129,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
       - name: npm audit (production)
         run: pnpm --dir web audit --prod --audit-level high

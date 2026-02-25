@@ -16,6 +16,14 @@ Checked in repo:
 - Frontend: React + TypeScript
 - Critical property: deterministic simulation and replayability
 
+## Tooling Baseline
+
+- Backend routing/logging: `chi` + `zap`
+- Backend data path scaffold: PostgreSQL + `pgx` + `sqlc` + `golang-migrate`
+- Backend dev reload: `air`
+- Frontend stack: `Vite` + `Tailwind CSS` + `shadcn/ui` scaffold + `TanStack Query`
+- Frontend quality: `ESLint` + `Prettier` + `Vitest`
+
 ## Command Policy
 
 - Prefer `make` targets if available.
@@ -30,13 +38,20 @@ Checked in repo:
 - Build package: `go build ./internal/sim`
 - Build server entry (if present): `go build ./cmd/server`
 - Build CLI entry (if present): `go build ./cmd/simcli`
+- SQLC generate: `make sqlc-generate`
+- Migration up: `make db-up`
+- Migration down: `make db-down`
+- Migration status: `make db-status`
+- Migration create: `make db-create name=add_table`
+- Dev reload server: `make dev-server`
 
 ### Web
 
-- Install deps: `pnpm --dir web install`
-- Dev server: `pnpm --dir web dev`
-- Build: `pnpm --dir web build`
-- Preview: `pnpm --dir web preview`
+- Install deps: `pnpm --dir=web install`
+- Dev server: `pnpm --dir=web run dev`
+- Build: `pnpm --dir=web run build`
+- Preview: `pnpm --dir=web run preview`
+- Add shadcn component: `make web-shadcn-add name=button`
 
 ## Lint and Format
 
@@ -49,10 +64,10 @@ Checked in repo:
 
 ### TypeScript / React
 
-- Lint: `pnpm --dir web eslint .`
-- Typecheck: `pnpm --dir web tsc --noEmit`
-- Prettier check: `pnpm --dir web prettier --check .`
-- Prettier write: `pnpm --dir web prettier --write .`
+- Lint: `pnpm --dir=web run lint`
+- Prettier check: `pnpm --dir=web exec prettier --check .`
+- Typecheck: `pnpm --dir=web run typecheck`
+- Prettier write: `pnpm --dir=web exec prettier --write .`
 
 ## Test Commands (Single-Test Focus)
 
@@ -69,16 +84,16 @@ Checked in repo:
 
 ### Frontend unit tests
 
-- All tests: `pnpm --dir web test`
-- Run once: `pnpm --dir web vitest run`
-- One file: `pnpm --dir web vitest run src/components/Timeline.test.tsx`
-- One test title: `pnpm --dir web vitest run -t "renders ready queue"`
+- All tests: `pnpm --dir=web run test`
+- Run once: `pnpm --dir=web exec vitest run`
+- One file: `pnpm --dir=web exec vitest run src/components/Timeline.test.tsx`
+- One test title: `pnpm --dir=web exec vitest run -t "renders ready queue"`
 
 ### E2E tests
 
-- All specs: `pnpm --dir web playwright test`
-- One spec: `pnpm --dir web playwright test tests/scheduler.spec.ts`
-- One test title: `pnpm --dir web playwright test -g "step mode updates Gantt"`
+- All specs: `pnpm --dir=web exec playwright test`
+- One spec: `pnpm --dir=web exec playwright test tests/scheduler.spec.ts`
+- One test title: `pnpm --dir=web exec playwright test -g "step mode updates Gantt"`
 
 ## Verification Sequence
 
@@ -92,11 +107,11 @@ Checked in repo:
 
 ### Frontend-only
 
-1. `pnpm --dir web prettier --write .`
-2. `pnpm --dir web eslint .`
-3. `pnpm --dir web tsc --noEmit`
+1. `pnpm --dir=web exec prettier --write .`
+2. `pnpm --dir=web run lint`
+3. `pnpm --dir=web run typecheck`
 4. Run targeted frontend test(s)
-5. `pnpm --dir web test`
+5. `pnpm --dir=web run test`
 
 ### Cross-cutting
 
@@ -167,3 +182,11 @@ Checked in repo:
 - Avoid broad refactors without direct requirement.
 - Update docs when commands/workflows/structure change.
 - If repo reality diverges from this guide, update `AGENTS.md` in the same change.
+
+## Generated Artifacts Policy
+
+- Do not hand-edit generated files when a framework/tool is the source of truth.
+- For SQL access layer changes: edit SQL in `db/query`/`db/schema`, then run `make sqlc-generate`.
+- For migrations: create new files via `make db-create name=<migration_name>`.
+- For shadcn/ui components: generate via `make web-shadcn-add name=<component>` (uses `shadcn@latest`).
+- If generated output changes are expected, include generated files in the same change.

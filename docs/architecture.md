@@ -5,9 +5,19 @@
 - `internal/sim`: deterministic simulator core, schedulers, VM, syscall path, devices/IRQs, filesystem, replay
 - `internal/lessons`: lesson DSL/catalog, validators, hint progression, progress/analytics
 - `internal/transport/realtime`: HTTP + WebSocket session transport, command validation, immutable snapshot DTO stream
+- `internal/platform/db`: optional Postgres pool bootstrap (`pgxpool`) for scaffolded persistence wiring
+- `internal/db/sqlc`: generated typed query layer from `sqlc` config and SQL files
 - `cmd/simcli`: headless runner for simulation, replay, lesson execution, and analytics
 - `cmd/server`: realtime transport server entrypoint for browser sessions
 - `web`: React + TypeScript control UI for session creation, run/pause/step/reset, and event log/status panels
+
+## Tooling and Runtime Adapters
+
+- backend HTTP router uses `chi`
+- backend server logging uses structured `zap`
+- DB workflow uses `golang-migrate` + `sqlc` with PostgreSQL/pgx
+- web client HTTP state uses `TanStack Query`
+- web styling baseline uses `Tailwind CSS` + `shadcn/ui` scaffolding
 
 ## Determinism Contract
 

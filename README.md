@@ -21,9 +21,14 @@ go run ./cmd/simcli -run-lesson-pack
 
 ```bash
 go run ./cmd/server -addr :8080
-pnpm --dir web install
-pnpm --dir web dev
+pnpm --dir=web install
+pnpm --dir=web run dev
 ```
+
+## Tooling Baseline
+
+- Backend: `chi`, `pgx` + `sqlc`, `golang-migrate`, `zap`, `golangci-lint`, `air`
+- Frontend: `Vite`, `Tailwind CSS`, `shadcn/ui` scaffolding, `TanStack Query`, `ESLint` + `Prettier`, `Vitest`
 
 ## Stable Engineering Workflow
 
@@ -36,6 +41,12 @@ Use `make` targets:
 - `make test-coverage` - enforce package coverage targets
 - `make test-deterministic` - deterministic regression suite
 - `make lesson-pack` - lesson-pack analytics smoke
+- `make sqlc-generate` - generate typed DB access code from SQL
+- `make db-up` / `make db-down` / `make db-status` - run local DB migrations
+- `make db-create name=add_feature` - create migration pair
+- `make web-shadcn-add name=button` - add shadcn/ui components via CLI
+- `make dev-server` - run backend with live reload via air
+- `make web-format-check` - run Prettier check for web sources
 - `make ci` - full CI-equivalent local run
 - `make security` - vulnerability and dependency audit checks
 - `make release-check` - CI checks + full build
