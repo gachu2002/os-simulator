@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LessonRunnerPanel } from "./LessonRunnerPanel";
@@ -19,7 +21,9 @@ describe("LessonRunnerPanel", () => {
               id: "l01",
               title: "CPU Basics",
               module: "cpu",
-              stages: [{ index: 0, id: "s1", title: "Observe scheduler behavior" }],
+              stages: [
+                { index: 0, id: "s1", title: "Observe scheduler behavior" },
+              ],
             },
           ],
         }),
@@ -51,7 +55,12 @@ describe("LessonRunnerPanel", () => {
               total_frames: 8,
               frames: [],
               tlb: [],
-              faults: { not_present: 0, permission: 0, tlb_hit: 0, tlb_miss: 0 },
+              faults: {
+                not_present: 0,
+                permission: 0,
+                tlb_hit: 0,
+                tlb_miss: 0,
+              },
             },
             filesystem_ok: true,
           },
@@ -76,7 +85,7 @@ describe("LessonRunnerPanel", () => {
       );
 
     const user = userEvent.setup();
-    render(<LessonRunnerPanel baseURL="http://localhost:8080" />);
+    renderWithQuery(<LessonRunnerPanel baseURL="http://localhost:8080" />);
 
     await waitFor(() => {
       expect(screen.getByText("cpu - CPU Basics")).toBeInTheDocument();
@@ -100,4 +109,16 @@ function jsonResponse(payload: unknown): Response {
     status: 200,
     json: async () => payload,
   } as Response;
+}
+
+function renderWithQuery(ui: ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
 }

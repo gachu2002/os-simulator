@@ -79,7 +79,9 @@ export function ControlBar(props: ControlBarProps) {
             max={16}
             value={props.quantum}
             disabled={props.disabled || props.policy !== "rr"}
-            onChange={(event) => props.onQuantumChange(Number(event.target.value))}
+            onChange={(event) =>
+              props.onQuantumChange(Number(event.target.value))
+            }
           />
         </label>
         <button

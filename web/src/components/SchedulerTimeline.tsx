@@ -12,10 +12,16 @@ export function SchedulerTimeline({ snapshot }: SchedulerTimelineProps) {
     <section className="panel timeline-panel">
       <h2>Scheduler Timeline</h2>
       {cells.length === 0 ? (
-        <p className="empty">Run or step a session to populate timeline slices.</p>
+        <p className="empty">
+          Run or step a session to populate timeline slices.
+        </p>
       ) : (
         <>
-          <div className="timeline-grid" role="list" aria-label="scheduler timeline">
+          <div
+            className="timeline-grid"
+            role="list"
+            aria-label="scheduler timeline"
+          >
             {cells.map((cell) => (
               <div
                 key={`${cell.tick}-${cell.pid}`}

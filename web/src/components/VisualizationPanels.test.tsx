@@ -67,7 +67,9 @@ const snapshot: SnapshotDTO = {
 describe("visualization panels", () => {
   it("renders scheduler cells", () => {
     render(<SchedulerTimeline snapshot={snapshot} />);
-    expect(screen.getByRole("list", { name: "scheduler timeline" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("list", { name: "scheduler timeline" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("P2")).toBeInTheDocument();
     expect(screen.getByText("idle")).toBeInTheDocument();
   });

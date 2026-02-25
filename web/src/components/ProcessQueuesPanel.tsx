@@ -15,7 +15,11 @@ export function ProcessQueuesPanel({ snapshot }: ProcessQueuesPanelProps) {
         <QueueColumn title="Running" items={queues.running} tone="running" />
         <QueueColumn title="Ready" items={queues.ready} tone="ready" />
         <QueueColumn title="Blocked" items={queues.blocked} tone="blocked" />
-        <QueueColumn title="Terminated" items={queues.terminated} tone="terminated" />
+        <QueueColumn
+          title="Terminated"
+          items={queues.terminated}
+          tone="terminated"
+        />
       </div>
     </section>
   );
