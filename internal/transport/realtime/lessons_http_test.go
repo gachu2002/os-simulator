@@ -19,7 +19,7 @@ func TestLessonsListEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get lessons failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusOK)
@@ -83,7 +83,7 @@ func TestLessonRunValidationErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("post run failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusBadRequest)
 	}
@@ -99,7 +99,7 @@ func runLesson(t *testing.T, baseURL string, req LessonRunRequest) LessonRunResp
 	if err != nil {
 		t.Fatalf("post run failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusOK)
 	}

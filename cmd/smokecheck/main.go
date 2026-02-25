@@ -58,7 +58,7 @@ func getOK(client *http.Client, endpoint string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("status=%d body=%s", resp.StatusCode, string(b))
@@ -75,7 +75,7 @@ func postOK(client *http.Client, endpoint string, payload any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
@@ -92,7 +92,7 @@ func createSession(client *http.Client, backend string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
@@ -116,7 +116,7 @@ func wsSmoke(backend, sessionID string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var connected map[string]any
 	if err := conn.ReadJSON(&connected); err != nil {
