@@ -47,7 +47,7 @@ func TestScenarioLessonsPassWithExpectedFeedbackKeys(t *testing.T) {
 	}
 }
 
-func TestCompletionAnalyticsAndPilotChecklist(t *testing.T) {
+func TestCompletionAnalytics(t *testing.T) {
 	e := NewEngine()
 	for _, id := range []string{"l01-sched-rr-basics", "l02-sched-fifo-baseline", "l03-sched-mlfq-balance", "l04-response-under-rr"} {
 		if err := runLessonPath(e, id); err != nil {
@@ -62,11 +62,8 @@ func TestCompletionAnalyticsAndPilotChecklist(t *testing.T) {
 	if a.CompletedStages != 12 {
 		t.Fatalf("completed stages=%d want=12", a.CompletedStages)
 	}
-	if len(a.ModuleBreakdown) != 4 {
-		t.Fatalf("module breakdown count=%d want=4", len(a.ModuleBreakdown))
-	}
-	if a.PilotChecklistOK {
-		t.Fatalf("pilot checklist should not be fully complete for partial run")
+	if a.AttemptedStages != 12 {
+		t.Fatalf("attempted stages=%d want=12", a.AttemptedStages)
 	}
 }
 
@@ -74,24 +71,6 @@ func TestPrerequisiteGateBlocksOutOfOrderStage(t *testing.T) {
 	e := NewEngine()
 	if _, err := e.RunStage("l07-vm-fault-sequence", 0); err == nil {
 		t.Fatalf("expected prerequisite failure for l07 stage s1")
-	}
-}
-
-func TestProgressPersistenceRoundTrip(t *testing.T) {
-	store := &fakeProgressPersistence{snapshot: map[string]StageProgress{}}
-	e := NewEngineWithCatalogAndPersistence(DefaultCatalog(), store)
-
-	for _, lessonID := range []string{"l01-sched-rr-basics", "l02-sched-fifo-baseline", "l03-sched-mlfq-balance", "l04-response-under-rr", "l05-throughput-shared-cpu", "l06-preemption-check"} {
-		for idx := 0; idx < 3; idx++ {
-			if _, err := e.RunStage(lessonID, idx); err != nil {
-				t.Fatalf("run stage %s[%d] failed: %v", lessonID, idx, err)
-			}
-		}
-	}
-
-	reloaded := NewEngineWithCatalogAndPersistence(DefaultCatalog(), store)
-	if _, err := reloaded.RunStage("l07-vm-fault-sequence", 0); err != nil {
-		t.Fatalf("expected l07 stage 0 to be unlocked after reload: %v", err)
 	}
 }
 
@@ -104,26 +83,6 @@ func runLessonPath(e *Engine, lessonID string) error {
 		if !res.Passed {
 			return fmt.Errorf("stage index %d failed with feedback %s", idx, res.FeedbackKey)
 		}
-	}
-	return nil
-}
-
-type fakeProgressPersistence struct {
-	snapshot map[string]StageProgress
-}
-
-func (f *fakeProgressPersistence) Load() (map[string]StageProgress, error) {
-	out := make(map[string]StageProgress, len(f.snapshot))
-	for key, stage := range f.snapshot {
-		out[key] = stage
-	}
-	return out, nil
-}
-
-func (f *fakeProgressPersistence) Save(stages map[string]StageProgress) error {
-	f.snapshot = make(map[string]StageProgress, len(stages))
-	for key, stage := range stages {
-		f.snapshot[key] = stage
 	}
 	return nil
 }

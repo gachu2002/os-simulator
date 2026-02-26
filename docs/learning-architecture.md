@@ -27,11 +27,10 @@ Every mission must follow the same loop:
 
 ## Product Modes
 
-The user experience is organized into three explicit modes:
+The user experience is organized into two explicit modes:
 
-- Path: guided curriculum and progression.
 - Sandbox: free simulation and experimentation.
-- Challenge: constrained assessments with grading.
+- Challenge: constrained challenge-step assessments with grading.
 
 Each screen should belong to one mode only.
 
@@ -52,25 +51,18 @@ Every stage mission should define:
 
 - `id`: stable stage id.
 - `module`: curriculum module id.
-- `objective`: what the learner should understand after completion.
+- `title`: learner-facing step name.
 - `prerequisites`: stage keys required before attempt.
-- `difficulty`: intro, core, advanced.
-- `estimated_minutes`: expected completion time.
-- `concept_tags`: key concepts (for weak-spot analytics).
-- `prompt`: the learner-facing task statement.
-- `prediction_prompt`: required pre-run prediction prompt.
 - `commands`: deterministic simulator command sequence.
 - `validators`: objective checks.
-- `explain_prompt`: required post-run reflection question.
 - `hints`: nudge, concept, explicit escalation.
-- `unlocks`: next stage keys enabled on pass.
 
 This extends current `Lesson` and `Stage` structures and keeps deterministic command/validator behavior intact.
 
 ## Mastery Rules
 
 - Pass threshold: mission validators all pass.
-- Mastery threshold: pass plus low hint usage (L1-L2 preferred) and stable repeat success.
+- Mastery threshold: pass all required stage missions for a module.
 - Module mastery: all core missions passed, plus at least one challenge mission.
 - Course completion: all modules mastered in sequence.
 
@@ -79,10 +71,8 @@ This extends current `Lesson` and `Stage` structures and keeps deterministic com
 Track at mission and module levels:
 
 - Attempt count before pass.
-- Highest hint level used.
-- Time-to-pass.
-- Determinism stability check status.
-- Concept weak spots (by `concept_tags`).
+- Stage completion rate.
+- Module completion rate.
 
 ## Definition of Done for Product Spine
 
@@ -90,4 +80,4 @@ This step is complete when:
 
 - All future learning features reference this document.
 - New lessons are written against the mission contract.
-- UI/transport work maps to one of the three product modes.
+- UI/transport work maps to one of the two product modes.

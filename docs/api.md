@@ -6,7 +6,6 @@
 - `POST /sessions`
 - `GET /lessons`
 - `POST /lessons/run`
-- `GET /lessons/progress`
 - `WS /ws/{sessionID}`
 
 ## Request/Response Notes
@@ -41,7 +40,7 @@ Response: `201` with initial snapshot payload.
 
 ### `GET /lessons`
 
-Returns lesson summaries with stage mission metadata including objective, prompt, difficulty, estimated minutes, concept tags, and prerequisite stage keys. Default catalog currently ships 20 lessons with 3 stages each.
+Returns lesson summaries with lightweight stage metadata (`index`, `id`, `title`). Default catalog currently ships 20 lessons with 3 stages each.
 
 ## Lesson Run
 
@@ -57,12 +56,6 @@ Body:
 ```
 
 Returns grading result, hint info, output snapshot fields, and completion analytics.
-
-## Lesson Progress
-
-### `GET /lessons/progress`
-
-Returns aggregate completion analytics and weak concept signals derived from attempts and hint escalation.
 
 ## WebSocket Stream
 

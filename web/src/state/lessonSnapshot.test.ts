@@ -40,11 +40,6 @@ describe("snapshotFromLessonRun", () => {
         completed_stages: 1,
         attempted_stages: 1,
         completion_rate: 0.05,
-        attempt_coverage: 0.05,
-        module_breakdown: [],
-        weak_concepts: [],
-        pilot_checklist: [],
-        pilot_checklist_ok: false,
       },
     };
 

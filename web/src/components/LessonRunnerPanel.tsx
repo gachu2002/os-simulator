@@ -16,7 +16,6 @@ export function LessonRunnerPanel({
     selectedLessonID,
     selectedStageIndex,
     runResult,
-    determinismStatus,
     errorMessage,
     isLessonsLoading,
     isRunPending,
@@ -27,10 +26,10 @@ export function LessonRunnerPanel({
 
   return (
     <section className="panel lesson-panel">
-      <h2>Lesson Runner</h2>
+      <h2>Challenge Runner</h2>
       <div className="lesson-controls">
         <label>
-          Lesson
+          Challenge
           <select
             value={selectedLessonID}
             disabled={isLessonsLoading || lessons.length === 0}
@@ -45,7 +44,7 @@ export function LessonRunnerPanel({
         </label>
 
         <label>
-          Stage
+          Step
           <select
             value={selectedStageIndex}
             disabled={!selectedLesson}
@@ -66,7 +65,7 @@ export function LessonRunnerPanel({
           disabled={isRunPending || !selectedLessonID}
           onClick={handleRun}
         >
-          {isRunPending ? "Running..." : "Run Stage"}
+          {isRunPending ? "Running..." : "Run Step"}
         </button>
       </div>
 
@@ -78,10 +77,9 @@ export function LessonRunnerPanel({
             <span className={runResult.passed ? "badge pass" : "badge fail"}>
               {runResult.passed ? "passed" : "failed"}
             </span>
-            <span>feedback: {runResult.feedback_key}</span>
+            <span>result: {runResult.feedback_key}</span>
             <span>trace hash: {runResult.output.trace_hash}</span>
             <span>trace length: {runResult.output.trace_length}</span>
-            <span>fs: {runResult.output.filesystem_ok ? "ok" : "failed"}</span>
           </div>
 
           {!runResult.passed && runResult.hint ? (
@@ -90,50 +88,15 @@ export function LessonRunnerPanel({
             </p>
           ) : null}
 
-          {determinismStatus ? (
-            <p className="determinism">
-              Determinism check:{" "}
-              {determinismStatus === "stable" ? "stable hash" : "hash changed"}
-            </p>
-          ) : null}
-
-          <div className="analytics-grid">
-            <article>
-              <h3>Completion</h3>
-              <p>
-                {runResult.analytics.completed_stages}/
-                {runResult.analytics.total_stages} (
-                {formatPercent(runResult.analytics.completion_rate)})
-              </p>
-              <p>
-                coverage: {runResult.analytics.attempted_stages}/
-                {runResult.analytics.total_stages} (
-                {formatPercent(runResult.analytics.attempt_coverage)})
-              </p>
-              <p>
-                pilot checklist:{" "}
-                {runResult.analytics.pilot_checklist_ok
-                  ? "ready"
-                  : "in progress"}
-              </p>
-            </article>
-
-            <article>
-              <h3>Modules</h3>
-              <ul>
-                {runResult.analytics.module_breakdown.map((mod) => (
-                  <li key={mod.module}>
-                    {mod.module}: {mod.completed_stage}/{mod.total_stages} (
-                    {formatPercent(mod.completion_rate)})
-                  </li>
-                ))}
-              </ul>
-            </article>
-          </div>
+          <p className="lesson-outcome">
+            Completed steps: {runResult.analytics.completed_stages}/
+            {runResult.analytics.total_stages} (
+            {formatPercent(runResult.analytics.completion_rate)})
+          </p>
         </>
       ) : (
         <p className="empty">
-          Run a lesson stage to view grading, hints, and analytics.
+          Pick a challenge and run a step to get grading feedback and hints.
         </p>
       )}
     </section>

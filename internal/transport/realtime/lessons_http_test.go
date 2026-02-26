@@ -38,8 +38,8 @@ func TestLessonsListEndpoint(t *testing.T) {
 	if len(out.Lessons[0].Stages) != 3 {
 		t.Fatalf("first lesson stage count=%d want=3", len(out.Lessons[0].Stages))
 	}
-	if out.Lessons[0].Stages[0].Objective == "" {
-		t.Fatalf("first stage objective should be populated")
+	if out.Lessons[0].Stages[0].Title == "" {
+		t.Fatalf("first stage title should be populated")
 	}
 }
 
@@ -74,40 +74,6 @@ func TestLessonRunHintProgressionAndAnalytics(t *testing.T) {
 	}
 	if third.Analytics.AttemptedStages < first.Analytics.AttemptedStages {
 		t.Fatalf("attempted stages regressed: first=%d third=%d", first.Analytics.AttemptedStages, third.Analytics.AttemptedStages)
-	}
-	if len(third.Analytics.WeakConcepts) == 0 {
-		t.Fatalf("expected weak concepts to be surfaced")
-	}
-}
-
-func TestLessonProgressEndpoint(t *testing.T) {
-	lessonEngine := lessons.NewEngine()
-	for _, lessonID := range []string{"l01-sched-rr-basics", "l02-sched-fifo-baseline", "l03-sched-mlfq-balance", "l04-response-under-rr", "l05-throughput-shared-cpu", "l06-preemption-check"} {
-		for idx := 0; idx < 3; idx++ {
-			if _, err := lessonEngine.RunStage(lessonID, idx); err != nil {
-				t.Fatalf("run stage %s[%d] failed: %v", lessonID, idx, err)
-			}
-		}
-	}
-
-	ts := httptest.NewServer(NewServerWithLessons(NewSessionManager(), lessonEngine).Handler())
-	defer ts.Close()
-
-	resp, err := http.Get(ts.URL + "/lessons/progress")
-	if err != nil {
-		t.Fatalf("get progress failed: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusOK)
-	}
-
-	var out LessonProgressResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		t.Fatalf("decode progress failed: %v", err)
-	}
-	if out.Analytics.CompletedStages != 18 {
-		t.Fatalf("completed stages=%d want=18", out.Analytics.CompletedStages)
 	}
 }
 
@@ -159,14 +125,10 @@ func injectFailingLesson(engine *lessons.Engine) *lessons.Engine {
 		ID:    "fail-lesson",
 		Title: "Failing Lesson",
 		Stages: []lessons.Stage{{
-			ID:          "s1",
-			Title:       "always fail",
-			Objective:   "force weak concept",
-			Prompt:      "force weak concept",
-			Difficulty:  "intro",
-			ConceptTags: []string{"diagnostics"},
-			Config:      lessons.SimConfig{Seed: 1, Policy: "rr", Quantum: 2, Frames: 8, TLBEntries: 4, DiskLatency: 3, TerminalLatency: 1},
-			Commands:    []sim.Command{{Name: "step", Count: 1}},
+			ID:       "s1",
+			Title:    "always fail",
+			Config:   lessons.SimConfig{Seed: 1, Policy: "rr", Quantum: 2, Frames: 8, TLBEntries: 4, DiskLatency: 3, TerminalLatency: 1},
+			Commands: []sim.Command{{Name: "step", Count: 1}},
 			Validators: []lessons.ValidatorSpec{{
 				Name:   "impossible",
 				Type:   "metric_eq",

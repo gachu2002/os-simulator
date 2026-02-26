@@ -9,7 +9,7 @@ Deterministic OSTEP-aligned simulator core implemented in Go with:
 - filesystem path traversal + block mapping
 - lesson engine + 20 lessons / 60 stages with stage missions (observe -> diagnose -> apply)
 - prerequisite-gated curriculum path (CPU -> Memory -> Concurrency -> Persistence)
-- progress analytics + weak-concept signals (persisted when `DATABASE_URL` is set)
+- basic completion analytics per challenge attempt
 
 ## Quick Start
 
@@ -29,10 +29,8 @@ pnpm --dir=web run dev
 
 Web routes:
 
-- `/path`: guided lessons with stage mission replay comparison
 - `/sandbox`: free deterministic simulation controls
-- `/challenge`: live controls + stage mission validation
-- `/progress`: persisted completion analytics and weak concepts
+- `/challenge`: focused challenge steps with deterministic grading and hints
 
 ## Tooling Baseline
 

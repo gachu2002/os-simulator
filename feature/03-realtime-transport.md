@@ -7,12 +7,10 @@ flowchart LR
   FE[Frontend] -->|POST /sessions| API[cmd/server]
   FE -->|GET /lessons| API
   FE -->|POST /lessons/run| API
-  FE -->|GET /lessons/progress| API
   FE <-->|WS /ws/{sessionID}| API
   API --> SM[SessionManager]
   SM --> ENG[sim.Engine]
   API --> LE[lessons.Engine]
-  LE -->|optional persistence| META[(app_metadata)]
 ```
 
 ```mermaid

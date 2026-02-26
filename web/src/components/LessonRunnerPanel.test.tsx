@@ -22,7 +22,11 @@ describe("LessonRunnerPanel", () => {
               title: "CPU Basics",
               module: "cpu",
               stages: [
-                { index: 0, id: "s1", title: "Observe scheduler behavior" },
+                {
+                  index: 0,
+                  id: "s1",
+                  title: "Observe scheduler behavior",
+                },
               ],
             },
           ],
@@ -69,17 +73,6 @@ describe("LessonRunnerPanel", () => {
             completed_stages: 1,
             attempted_stages: 1,
             completion_rate: 0.05,
-            attempt_coverage: 0.05,
-            module_breakdown: [
-              {
-                module: "cpu",
-                total_stages: 5,
-                completed_stage: 1,
-                completion_rate: 0.2,
-              },
-            ],
-            pilot_checklist: [],
-            pilot_checklist_ok: false,
           },
         }),
       );
@@ -91,12 +84,12 @@ describe("LessonRunnerPanel", () => {
       expect(screen.getByText("cpu - CPU Basics")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Run Stage" }));
+    await user.click(screen.getByRole("button", { name: "Run Step" }));
 
     await waitFor(() => {
       expect(screen.getByText("passed")).toBeInTheDocument();
-      expect(screen.getByText("feedback: stage.s1.passed")).toBeInTheDocument();
-      expect(screen.getByText("1/20 (5%)")).toBeInTheDocument();
+      expect(screen.getByText("result: stage.s1.passed")).toBeInTheDocument();
+      expect(screen.getByText("Completed steps: 1/20 (5%)")).toBeInTheDocument();
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);

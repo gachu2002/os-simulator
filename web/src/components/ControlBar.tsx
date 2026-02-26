@@ -12,6 +12,7 @@ interface ControlBarProps {
 export function ControlBar(props: ControlBarProps) {
   return (
     <section className="panel control-panel">
+      <h2>Simulator Controls</h2>
       <div className="control-row">
         <button
           type="button"

@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"os-simulator-plan/internal/platform/db"
 	"os-simulator-plan/internal/transport/realtime"
 
 	"go.uber.org/zap"
@@ -29,19 +28,7 @@ func main() {
 	}()
 
 	manager := realtime.NewSessionManager()
-	startupCtx, startupCancel := context.WithTimeout(context.Background(), 3*time.Second)
-	pool, err := db.NewPoolFromEnv(startupCtx, logger)
-	startupCancel()
-	if err != nil {
-		logger.Error("database bootstrap failed", zap.Error(err))
-		os.Exit(1)
-	}
-	if pool != nil {
-		defer pool.Close()
-	}
-
-	lessonEngine := realtime.NewLessonEngineWithPersistence(pool)
-	transport := realtime.NewServerWithLessons(manager, lessonEngine)
+	transport := realtime.NewServer(manager)
 
 	httpServer := &http.Server{
 		Addr:              *addr,

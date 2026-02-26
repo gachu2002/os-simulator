@@ -19,14 +19,10 @@ export function useLessonRunner({
   const [selectedLessonIDState, setSelectedLessonIDState] = useState("");
   const [selectedStageIndexState, setSelectedStageIndexState] = useState(0);
   const [runResult, setRunResult] = useState<LessonRunResponse | null>(null);
-  const [lastTraceHash, setLastTraceHash] = useState("");
-  const [determinismStatus, setDeterminismStatus] = useState<
-    "" | "stable" | "changed"
-  >("");
   const [runError, setRunError] = useState("");
 
   const lessonsQuery = useQuery({
-    queryKey: ["lessons", baseURL],
+    queryKey: ["challenges", baseURL],
     queryFn: () => fetchLessons(baseURL),
   });
 
@@ -95,24 +91,12 @@ export function useLessonRunner({
         lessonID: selectedLessonID,
         stageIndex: selectedStageIndex,
       });
-      if (lastTraceHash !== "") {
-        setDeterminismStatus(
-          lastTraceHash === result.output.trace_hash ? "stable" : "changed",
-        );
-      }
-      setLastTraceHash(result.output.trace_hash);
       setRunResult(result);
       onRunResult?.(result);
     } catch (err) {
-      setRunError(err instanceof Error ? err.message : "failed to run lesson stage");
+      setRunError(err instanceof Error ? err.message : "failed to run challenge step");
     }
-  }, [
-    lastTraceHash,
-    onRunResult,
-    runStageMutation,
-    selectedLessonID,
-    selectedStageIndex,
-  ]);
+  }, [onRunResult, runStageMutation, selectedLessonID, selectedStageIndex]);
 
   return {
     lessons,
@@ -120,7 +104,6 @@ export function useLessonRunner({
     selectedLessonID,
     selectedStageIndex,
     runResult,
-    determinismStatus,
     errorMessage,
     isLessonsLoading: lessonsQuery.isLoading,
     isRunPending: runStageMutation.isPending,

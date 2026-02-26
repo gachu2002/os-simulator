@@ -27,19 +27,13 @@ type HintSet struct {
 }
 
 type Stage struct {
-	ID               string
-	Title            string
-	Objective        string
-	Prompt           string
-	Difficulty       string
-	EstimatedMinutes int
-	ConceptTags      []string
-	Prerequisites    []string
-	Unlocks          []string
-	Config           SimConfig
-	Commands         []sim.Command
-	Validators       []ValidatorSpec
-	Hints            HintSet
+	ID            string
+	Title         string
+	Prerequisites []string
+	Config        SimConfig
+	Commands      []sim.Command
+	Validators    []ValidatorSpec
+	Hints         HintSet
 }
 
 type Lesson struct {
@@ -65,29 +59,9 @@ type StageResult struct {
 	Output      StageOutput
 }
 
-type ConceptWeakness struct {
-	Concept        string
-	Score          float64
-	FailedAttempts int
-	HighHintUses   int
-	AffectedStages int
-}
-
-type ModuleAnalytics struct {
-	Module         string
-	TotalStages    int
-	CompletedStage int
-	CompletionRate float64
-}
-
 type CompletionAnalytics struct {
-	TotalStages      int
-	CompletedStages  int
-	AttemptedStages  int
-	CompletionRate   float64
-	AttemptCoverage  float64
-	ModuleBreakdown  []ModuleAnalytics
-	WeakConcepts     []ConceptWeakness
-	PilotChecklist   []string
-	PilotChecklistOK bool
+	TotalStages     int
+	CompletedStages int
+	AttemptedStages int
+	CompletionRate  float64
 }

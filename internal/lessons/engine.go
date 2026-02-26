@@ -1,7 +1,6 @@
 package lessons
 
 import (
-	"cmp"
 	"fmt"
 	"sort"
 	"strings"
@@ -10,31 +9,16 @@ import (
 )
 
 type StageProgress struct {
-	Attempts         int  `json:"attempts"`
-	Completed        bool `json:"completed"`
-	HighestHintLevel int  `json:"highest_hint_level"`
+	Attempts  int
+	Completed bool
 }
 
 type ProgressStore struct {
 	stages map[string]*StageProgress
 }
 
-type ProgressPersistence interface {
-	Load() (map[string]StageProgress, error)
-	Save(stages map[string]StageProgress) error
-}
-
 func NewProgressStore() *ProgressStore {
 	return &ProgressStore{stages: map[string]*StageProgress{}}
-}
-
-func NewProgressStoreFromSnapshot(snapshot map[string]StageProgress) *ProgressStore {
-	stages := make(map[string]*StageProgress, len(snapshot))
-	for key, stage := range snapshot {
-		copy := stage
-		stages[key] = &copy
-	}
-	return &ProgressStore{stages: stages}
 }
 
 func (p *ProgressStore) key(lessonID, stageID string) string {
@@ -61,59 +45,21 @@ func (p *ProgressStore) Get(lessonID, stageID string) StageProgress {
 	return StageProgress{}
 }
 
-func (p *ProgressStore) Snapshot() map[string]StageProgress {
-	out := make(map[string]StageProgress, len(p.stages))
-	for key, stage := range p.stages {
-		out[key] = *stage
-	}
-	return out
-}
-
-func (p *ProgressStore) SetHighestHintLevel(lessonID, stageID string, hintLevel int) {
-	k := p.key(lessonID, stageID)
-	if _, ok := p.stages[k]; !ok {
-		p.stages[k] = &StageProgress{}
-	}
-	if hintLevel > p.stages[k].HighestHintLevel {
-		p.stages[k].HighestHintLevel = hintLevel
-	}
-}
-
 type Engine struct {
-	catalog      map[string]Lesson
-	progress     *ProgressStore
-	persistence  ProgressPersistence
-	persistError error
+	catalog  map[string]Lesson
+	progress *ProgressStore
 }
 
 func NewEngine() *Engine {
-	return newEngine(DefaultCatalog(), nil)
+	return NewEngineWithCatalog(DefaultCatalog())
 }
 
 func NewEngineWithCatalog(catalog map[string]Lesson) *Engine {
-	return newEngine(catalog, nil)
-}
-
-func NewEngineWithCatalogAndPersistence(catalog map[string]Lesson, persistence ProgressPersistence) *Engine {
-	return newEngine(catalog, persistence)
-}
-
-func newEngine(catalog map[string]Lesson, persistence ProgressPersistence) *Engine {
 	copyCatalog := make(map[string]Lesson, len(catalog))
 	for id, lesson := range catalog {
 		copyCatalog[id] = lesson
 	}
-	progress := NewProgressStore()
-	var persistErr error
-	if persistence != nil {
-		loaded, err := persistence.Load()
-		if err != nil {
-			persistErr = fmt.Errorf("load progress: %w", err)
-		} else {
-			progress = NewProgressStoreFromSnapshot(loaded)
-		}
-	}
-	return &Engine{catalog: copyCatalog, progress: progress, persistence: persistence, persistError: persistErr}
+	return &Engine{catalog: copyCatalog, progress: NewProgressStore()}
 }
 
 func (e *Engine) Lessons() []Lesson {
@@ -124,16 +70,12 @@ func (e *Engine) Lessons() []Lesson {
 	}
 	sort.Strings(ids)
 	for _, id := range ids {
-		lesson := e.catalog[id]
-		out = append(out, lesson)
+		out = append(out, e.catalog[id])
 	}
 	return out
 }
 
 func (e *Engine) RunStage(lessonID string, stageIndex int) (StageResult, error) {
-	if e.persistError != nil {
-		return StageResult{}, e.persistError
-	}
 	lesson, ok := e.catalog[lessonID]
 	if !ok {
 		return StageResult{}, fmt.Errorf("lesson %q not found", lessonID)
@@ -158,29 +100,12 @@ func (e *Engine) RunStage(lessonID string, stageIndex int) (StageResult, error) 
 		if !ok {
 			prog := e.progress.Record(lesson.ID, stage.ID, false)
 			hintLevel, hint := hintForAttempt(stage.Hints, prog.Attempts)
-			e.progress.SetHighestHintLevel(lesson.ID, stage.ID, hintLevel)
-			if err := e.persistProgress(); err != nil {
-				return StageResult{}, err
-			}
 			return StageResult{Passed: false, FeedbackKey: "validator." + v.Name, Hint: hint, HintLevel: hintLevel, Output: output}, nil
 		}
 	}
 
 	e.progress.Record(lesson.ID, stage.ID, true)
-	if err := e.persistProgress(); err != nil {
-		return StageResult{}, err
-	}
 	return StageResult{Passed: true, FeedbackKey: "stage." + stage.ID + ".passed", Output: output}, nil
-}
-
-func (e *Engine) persistProgress() error {
-	if e.persistence == nil {
-		return nil
-	}
-	if err := e.persistence.Save(e.progress.Snapshot()); err != nil {
-		return fmt.Errorf("persist progress: %w", err)
-	}
-	return nil
 }
 
 func (e *Engine) isPrerequisiteCompleted(key string) bool {
@@ -222,7 +147,6 @@ func hintForAttempt(h HintSet, attempts int) (int, string) {
 }
 
 func (e *Engine) CompletionAnalytics() CompletionAnalytics {
-	modules := map[string]*ModuleAnalytics{}
 	total := 0
 	completed := 0
 	attempted := 0
@@ -237,96 +161,12 @@ func (e *Engine) CompletionAnalytics() CompletionAnalytics {
 			if prog.Attempts > 0 {
 				attempted++
 			}
-
-			if _, ok := modules[lesson.Module]; !ok {
-				modules[lesson.Module] = &ModuleAnalytics{Module: lesson.Module}
-			}
-			m := modules[lesson.Module]
-			m.TotalStages++
-			if prog.Completed {
-				m.CompletedStage++
-			}
 		}
 	}
 
-	modOut := make([]ModuleAnalytics, 0, len(modules))
-	for _, m := range modules {
-		if m.TotalStages > 0 {
-			m.CompletionRate = float64(m.CompletedStage) / float64(m.TotalStages)
-		}
-		modOut = append(modOut, *m)
-	}
-	sort.Slice(modOut, func(i, j int) bool { return modOut[i].Module < modOut[j].Module })
-
-	analytics := CompletionAnalytics{TotalStages: total, CompletedStages: completed, AttemptedStages: attempted, ModuleBreakdown: modOut}
+	analytics := CompletionAnalytics{TotalStages: total, CompletedStages: completed, AttemptedStages: attempted}
 	if total > 0 {
 		analytics.CompletionRate = float64(completed) / float64(total)
-		analytics.AttemptCoverage = float64(attempted) / float64(total)
 	}
-
-	checklist := []string{}
-	if attempted == total {
-		checklist = append(checklist, "pilot.attempt-coverage.ok")
-	}
-	if completed >= total/2 {
-		checklist = append(checklist, "pilot.completion-flow.ok")
-	}
-	if len(modOut) >= 4 {
-		checklist = append(checklist, "pilot.module-coverage.ok")
-	}
-	analytics.PilotChecklist = checklist
-	analytics.PilotChecklistOK = len(checklist) == 3
-	analytics.WeakConcepts = weakConcepts(e.catalog, e.progress)
 	return analytics
-}
-
-func weakConcepts(catalog map[string]Lesson, progress *ProgressStore) []ConceptWeakness {
-	agg := map[string]*ConceptWeakness{}
-	for _, lesson := range catalog {
-		for _, stage := range lesson.Stages {
-			if len(stage.ConceptTags) == 0 {
-				continue
-			}
-			prog := progress.Get(lesson.ID, stage.ID)
-			if prog.Attempts == 0 {
-				continue
-			}
-			failedAttempts := prog.Attempts
-			if prog.Completed && failedAttempts > 0 {
-				failedAttempts--
-			}
-			highHintUses := 0
-			if prog.HighestHintLevel >= 2 {
-				highHintUses = 1
-			}
-			if failedAttempts == 0 && highHintUses == 0 {
-				continue
-			}
-			for _, tag := range stage.ConceptTags {
-				entry, ok := agg[tag]
-				if !ok {
-					entry = &ConceptWeakness{Concept: tag}
-					agg[tag] = entry
-				}
-				entry.FailedAttempts += failedAttempts
-				entry.HighHintUses += highHintUses
-				entry.AffectedStages++
-			}
-		}
-	}
-	out := make([]ConceptWeakness, 0, len(agg))
-	for _, item := range agg {
-		item.Score = float64(item.FailedAttempts) + float64(item.HighHintUses)*0.5
-		out = append(out, *item)
-	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Score != out[j].Score {
-			return out[i].Score > out[j].Score
-		}
-		if out[i].FailedAttempts != out[j].FailedAttempts {
-			return out[i].FailedAttempts > out[j].FailedAttempts
-		}
-		return cmp.Less(out[i].Concept, out[j].Concept)
-	})
-	return out
 }

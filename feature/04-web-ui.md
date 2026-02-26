@@ -1,32 +1,28 @@
 # 04) Web UI
 
-React + TypeScript control plane organized into explicit learning modes: Path, Sandbox, Challenge, and Progress.
+React + TypeScript control plane organized into two learning modes: Sandbox and Challenge.
 
 ```mermaid
 flowchart TB
-  APP[App Router by URL mode] --> PATH[/path]
-  APP --> SBX[/sandbox]
+  APP[App Router by URL mode] --> SBX[/sandbox]
   APP --> CHAL[/challenge]
-  APP --> PROG[/progress]
   SBX --> CTRL[Control Bar]
   SBX --> STATUS[Status Cards]
   SBX --> LOG[Event Log]
-  PATH --> LESSON[Lesson Stage Runner]
-  CHAL --> LESSON
-  PATH --> VIZ[Visualization Suite]
+  CHAL --> LESSON[Challenge Runner]
+  CHAL --> CVIZ[Challenge Snapshot]
   SBX --> VIZ
   VIZ --> TL[Scheduler Timeline]
   VIZ --> MEM[Memory Panel]
   VIZ --> Q[Process Queues]
   VIZ --> PM[Process Metrics]
-  PROG --> ANA[Progress + Weak Concepts]
 ```
 
 ```mermaid
 flowchart LR
-  HTTP[createSession/fetchLessons/runLesson/fetchProgress] --> STATE[Reducer + Selectors + Query]
+  HTTP[createSession/fetchLessons/runLesson] --> STATE[Reducer + Selectors + Query]
   WS[session events] --> STATE
-  LES[Lesson run output] --> MAP[lessonSnapshot mapper]
+  RUN[Challenge run output] --> MAP[challenge snapshot mapper]
   MAP --> STATE
   STATE --> UI[Deterministic Render]
 ```

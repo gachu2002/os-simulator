@@ -1,6 +1,6 @@
 # 05) Lesson Engine
 
-20-lesson / 60-stage OSTEP-aligned catalog where each lesson stage is a mission (observe, diagnose, apply), with prerequisite gating, validators, hint progression, persisted progress, and weak-concept analytics.
+20-lesson / 60-stage OSTEP-aligned catalog where each lesson stage is a mission (observe, diagnose, apply), with prerequisite gating, validators, and hint progression.
 
 ```mermaid
 flowchart LR
@@ -11,8 +11,7 @@ flowchart LR
   VAL -->|fail| HINT[Hints L1->L2->L3]
   PASS --> PROG[Progress Store]
   HINT --> PROG
-  PROG --> ANA[Completion Analytics + Weak Concepts]
-  PROG --> PERSIST[(optional DB persistence)]
+  PROG --> ANA[Completion Analytics]
 ```
 
 ```mermaid

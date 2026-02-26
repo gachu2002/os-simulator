@@ -4,12 +4,12 @@
 
 - `internal/sim`: deterministic simulator core, schedulers, VM, syscall path, devices/IRQs, filesystem, replay
 - `internal/lessons`: staged mission catalog (observe/diagnose/apply), prerequisite gates, validators, hint progression, progress/analytics
-- `internal/transport/realtime`: HTTP + WebSocket transport for sessions, lessons, and persisted lesson progress analytics
-- `internal/platform/db`: Postgres pool bootstrap (`pgxpool`) used by optional lesson-progress persistence
+- `internal/transport/realtime`: HTTP + WebSocket transport for sessions and challenge runs
+- `internal/platform/db`: Postgres pool bootstrap (`pgxpool`) retained for infrastructure scaffolding
 - `internal/db/sqlc`: generated typed query layer from `sqlc` config and SQL files
 - `cmd/simcli`: headless runner for simulation, replay, lesson execution, and analytics
 - `cmd/server`: realtime transport server entrypoint for browser sessions
-- `web`: React + TypeScript UI with mode routes (`/path`, `/sandbox`, `/challenge`, `/progress`) over deterministic DTO snapshots
+- `web`: React + TypeScript UI with mode routes (`/sandbox`, `/challenge`) over deterministic DTO snapshots
 
 ## Tooling and Runtime Adapters
 

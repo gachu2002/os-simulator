@@ -23,15 +23,9 @@ func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 		stages := make([]LessonStageSummary, 0, len(lesson.Stages))
 		for idx, stage := range lesson.Stages {
 			stages = append(stages, LessonStageSummary{
-				Index:            idx,
-				ID:               stage.ID,
-				Title:            stage.Title,
-				Objective:        stage.Objective,
-				Prompt:           stage.Prompt,
-				Difficulty:       stage.Difficulty,
-				EstimatedMinutes: stage.EstimatedMinutes,
-				ConceptTags:      append([]string(nil), stage.ConceptTags...),
-				Prerequisites:    append([]string(nil), stage.Prerequisites...),
+				Index: idx,
+				ID:    stage.ID,
+				Title: stage.Title,
 			})
 		}
 		out = append(out, LessonSummary{ID: lesson.ID, Title: lesson.Title, Module: lesson.Module, Stages: stages})
@@ -90,48 +84,11 @@ func (s *Server) handleLessonRun(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) handleLessonProgress(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
-		return
-	}
-
-	s.lessonMu.Lock()
-	analytics := s.lessonEngine.CompletionAnalytics()
-	s.lessonMu.Unlock()
-
-	respondJSON(w, http.StatusOK, LessonProgressResponse{Analytics: convertAnalytics(analytics)})
-}
-
 func convertAnalytics(in lessons.CompletionAnalytics) CompletionAnalyticsDTO {
-	modules := make([]ModuleAnalyticsDTO, 0, len(in.ModuleBreakdown))
-	for _, module := range in.ModuleBreakdown {
-		modules = append(modules, ModuleAnalyticsDTO{
-			Module:         module.Module,
-			TotalStages:    module.TotalStages,
-			CompletedStage: module.CompletedStage,
-			CompletionRate: module.CompletionRate,
-		})
-	}
-	weakConcepts := make([]ConceptWeaknessDTO, 0, len(in.WeakConcepts))
-	for _, weak := range in.WeakConcepts {
-		weakConcepts = append(weakConcepts, ConceptWeaknessDTO{
-			Concept:        weak.Concept,
-			Score:          weak.Score,
-			FailedAttempts: weak.FailedAttempts,
-			HighHintUses:   weak.HighHintUses,
-			AffectedStages: weak.AffectedStages,
-		})
-	}
 	return CompletionAnalyticsDTO{
-		TotalStages:      in.TotalStages,
-		CompletedStages:  in.CompletedStages,
-		AttemptedStages:  in.AttemptedStages,
-		CompletionRate:   in.CompletionRate,
-		AttemptCoverage:  in.AttemptCoverage,
-		ModuleBreakdown:  modules,
-		WeakConcepts:     weakConcepts,
-		PilotChecklist:   append([]string(nil), in.PilotChecklist...),
-		PilotChecklistOK: in.PilotChecklistOK,
+		TotalStages:     in.TotalStages,
+		CompletedStages: in.CompletedStages,
+		AttemptedStages: in.AttemptedStages,
+		CompletionRate:  in.CompletionRate,
 	}
 }

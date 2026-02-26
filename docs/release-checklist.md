@@ -20,11 +20,11 @@
 - [ ] lesson pack analytics reports 60/60 stage completion in smoke run
 - [ ] `cmd/server` starts and responds on `/healthz`
 - [ ] web build artifact (`web/dist`) is generated and deployable
-- [ ] lesson API paths (`/lessons`, `/lessons/run`, `/lessons/progress`) respond successfully
+- [ ] lesson API paths (`/lessons`, `/lessons/run`) respond successfully
 
 ## Deployment Smoke (Hosted)
 
-- [ ] Backend hosted URL passes `/healthz`, `/lessons`, `/lessons/run`, and `/lessons/progress` checks
+- [ ] Backend hosted URL passes `/healthz`, `/lessons`, and `/lessons/run` checks
 - [ ] Frontend hosted URL serves the app shell successfully
 - [ ] GitHub workflow `deploy-smoke` passes on `main`
 
@@ -37,4 +37,4 @@
 ## Post-Release
 
 - [ ] Open next-iteration planning issue with lessons/content quality feedback
-- [ ] Capture pilot checklist outcomes and completion analytics snapshot
+- [ ] Capture challenge completion analytics snapshot

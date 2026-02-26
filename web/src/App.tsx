@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { ControlBar } from "./components/ControlBar";
@@ -7,60 +6,39 @@ import { LessonRunnerPanel } from "./components/LessonRunnerPanel";
 import { StatusCards } from "./components/StatusCards";
 import { VisualizationSuite } from "./components/VisualizationSuite";
 import { useSession } from "./hooks/useSession";
-import {
-  fetchLessonProgress,
-  type LessonRunResponse,
-} from "./lib/lessonApi";
+import type { LessonRunResponse } from "./lib/lessonApi";
 import { snapshotFromLessonRun } from "./state/lessonSnapshot";
 
-type AppMode = "path" | "sandbox" | "challenge" | "progress";
+type AppMode = "sandbox" | "challenge";
 
 const MODE_PATHS: Record<AppMode, string> = {
-  path: "/path",
   sandbox: "/sandbox",
   challenge: "/challenge",
-  progress: "/progress",
 };
 
 const MODE_META: Record<AppMode, { eyebrow: string; title: string; subtitle: string }> = {
-  path: {
-    eyebrow: "Guided Path",
-    title: "Learn OSTEP Step by Step",
-    subtitle:
-      "Work through sequenced lessons, verify outcomes, and compare replay snapshots.",
-  },
   sandbox: {
     eyebrow: "Sandbox",
-    title: "Experiment Freely",
+    title: "Experiment with OSTEP Concepts",
     subtitle:
-      "Control a live deterministic session and inspect traces, queues, and memory behavior.",
+      "Build intuition by running your own deterministic workloads and inspecting what changes.",
   },
   challenge: {
     eyebrow: "Challenge",
-    title: "Apply What You Learned",
+    title: "Solve Small OSTEP Steps",
     subtitle:
-      "Run a live session while solving lesson goals under tighter constraints and less guidance.",
-  },
-  progress: {
-    eyebrow: "Progress",
-    title: "Track Mastery",
-    subtitle:
-      "Review your latest lesson outcomes and plan the next modules to strengthen.",
+      "Complete focused challenge steps with hints and deterministic grading feedback.",
   },
 };
 
 function normalizeMode(pathname: string): AppMode {
   switch (pathname) {
-    case "/sandbox":
-      return "sandbox";
     case "/challenge":
       return "challenge";
-    case "/progress":
-      return "progress";
-    case "/path":
+    case "/sandbox":
     case "/":
     default:
-      return "path";
+      return "sandbox";
   }
 }
 
@@ -84,16 +62,9 @@ export function App() {
     typeof snapshotFromLessonRun
   > | null>(null);
   const [lessonTitle, setLessonTitle] = useState("");
-  const [compareMode, setCompareMode] = useState(true);
   const [mode, setMode] = useState<AppMode>(() =>
     normalizeMode(window.location.pathname),
   );
-  const progressQuery = useQuery({
-    queryKey: ["lesson-progress", baseURL],
-    queryFn: () => fetchLessonProgress(baseURL),
-    enabled: mode === "progress",
-    refetchInterval: mode === "progress" ? 3000 : false,
-  });
 
   useEffect(() => {
     function handlePopState() {
@@ -116,7 +87,7 @@ export function App() {
 
   function handleLessonRunResult(result: LessonRunResponse) {
     setLessonSnapshot(snapshotFromLessonRun(result));
-    setLessonTitle(`${result.lesson_id} stage ${result.stage_index}`);
+    setLessonTitle(`${result.lesson_id} step ${result.stage_index + 1}`);
   }
 
   return (
@@ -143,50 +114,10 @@ export function App() {
         ))}
       </nav>
 
-      {mode === "path" ? (
-        <>
-          <LessonRunnerPanel
-            baseURL={baseURL}
-            onRunResult={handleLessonRunResult}
-          />
-
-          <section className="panel compare-panel">
-            <label>
-              <input
-                type="checkbox"
-                checked={compareMode}
-                onChange={(event) => setCompareMode(event.target.checked)}
-              />
-              Side-by-side lesson replay snapshot mode
-            </label>
-          </section>
-
-          <div
-            className={
-              compareMode && lessonSnapshot
-                ? "viz-compare-grid"
-                : "viz-single-grid"
-            }
-          >
-            <VisualizationSuite
-              title="Live Session Visualizations"
-              subtitle="Realtime transport stream from active session controls"
-              snapshot={state.snapshot}
-            />
-            {compareMode && lessonSnapshot ? (
-              <VisualizationSuite
-                title="Lesson Replay Snapshot"
-                subtitle={`Latest lesson run: ${lessonTitle}`}
-                snapshot={lessonSnapshot}
-              />
-            ) : null}
-          </div>
-        </>
-      ) : null}
-
-      {mode === "sandbox" || mode === "challenge" ? (
+      {mode === "sandbox" ? (
         <>
           <section className="panel session-panel">
+            <h2>Session Setup</h2>
             <div className="session-form">
               <label>
                 Server URL
@@ -231,13 +162,6 @@ export function App() {
             onCommand={handleCommand}
           />
 
-          {mode === "challenge" ? (
-            <LessonRunnerPanel
-              baseURL={baseURL}
-              onRunResult={handleLessonRunResult}
-            />
-          ) : null}
-
           <VisualizationSuite
             title="Live Session Visualizations"
             subtitle="Realtime transport stream from active session controls"
@@ -248,45 +172,39 @@ export function App() {
         </>
       ) : null}
 
-      {mode === "progress" ? (
-        <section className="panel progress-panel">
-          <h2>Learning Progress Snapshot</h2>
-          {progressQuery.error instanceof Error ? (
-            <p className="error">{progressQuery.error.message}</p>
-          ) : null}
-          {progressQuery.data ? (
-            <>
-              <ul>
-                <li>
-                  Completed stages: {progressQuery.data.analytics.completed_stages}/
-                  {progressQuery.data.analytics.total_stages}
-                </li>
-                <li>
-                  Attempt coverage: {Math.round(progressQuery.data.analytics.attempt_coverage * 100)}%
-                </li>
-                <li>
-                  Pilot checklist: {progressQuery.data.analytics.pilot_checklist_ok ? "ready" : "in progress"}
-                </li>
-                {lessonSnapshot ? <li>Latest lesson run: {lessonTitle}</li> : null}
-              </ul>
+      {mode === "challenge" ? (
+        <>
+          <section className="panel challenge-setup-panel">
+            <h2>Challenge Setup</h2>
+            <label>
+              Server URL
+              <input
+                value={baseURL}
+                onChange={(event) => setBaseURL(event.target.value)}
+                placeholder="http://127.0.0.1:5173"
+              />
+            </label>
+            <p className="challenge-note">
+              Each challenge step is short and focused. Run the step, inspect
+              the result, and use the hint to refine your reasoning.
+            </p>
+          </section>
 
-              <h3>Weak concepts</h3>
-              {progressQuery.data.analytics.weak_concepts.length > 0 ? (
-                <ul>
-                  {progressQuery.data.analytics.weak_concepts.map((item) => (
-                    <li key={item.concept}>
-                      {item.concept}: score {item.score.toFixed(1)} (fails {item.failed_attempts}, hints {item.high_hint_uses})
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="empty">No weak concepts detected yet.</p>
-              )}
-            </>
-          ) : (
-            <p className="empty">Run lessons to populate progress analytics.</p>
-          )}
-        </section>
+          <LessonRunnerPanel
+            baseURL={baseURL}
+            onRunResult={handleLessonRunResult}
+          />
+
+          <VisualizationSuite
+            title="Challenge Step Snapshot"
+            subtitle={
+              lessonSnapshot
+                ? `Latest challenge result: ${lessonTitle}`
+                : "Run a challenge step to render scheduler, memory, and process views"
+            }
+            snapshot={lessonSnapshot}
+          />
+        </>
       ) : null}
     </main>
   );

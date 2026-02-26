@@ -9,16 +9,14 @@ pnpm --dir=web install
 pnpm --dir=web run dev
 ```
 
-By default, the app expects transport server at `http://localhost:8080`.
+By default in dev, the app uses same-origin API calls and Vite proxies `/sessions`, `/lessons`, and `/ws` to `http://127.0.0.1:8080`.
 
 ## UI Modes
 
-- `/path`: guided lesson mode with lesson replay comparison
 - `/sandbox`: free-form simulator control and visualization
-- `/challenge`: live control + lesson goal validation
-- `/progress`: persisted completion analytics and weak-concept summary
+- `/challenge`: focused challenge steps with grading and hint feedback
 
-`/progress` now reads `GET /lessons/progress` for persisted analytics and weak-concept signals.
+Challenge mode runs small OSTEP steps; Sandbox mode is for free experimentation.
 
 ## Verification
 

@@ -107,6 +107,5 @@ function defaultBaseURL(): string {
   if (typeof window === "undefined") {
     return "http://localhost:8080";
   }
-  const host = window.location.hostname || "localhost";
-  return `http://${host}:8080`;
+  return window.location.origin;
 }
