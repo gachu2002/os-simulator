@@ -1,14 +1,3 @@
-export interface SessionConfig {
-  seed?: number;
-  checkpoint_every?: number;
-  policy?: "fifo" | "rr" | "mlfq";
-  quantum?: number;
-  frames?: number;
-  tlb_entries?: number;
-  disk_latency?: number;
-  terminal_latency?: number;
-}
-
 export interface ProcessSnapshot {
   pid: number;
   name: string;
@@ -74,11 +63,14 @@ export interface SnapshotDTO {
   metrics: SchedulingMetrics;
   memory: MemorySnapshot;
   last_command?: string;
-}
-
-export interface CreateSessionResponse {
-  session_id: string;
-  snapshot: SnapshotDTO;
+  challenge?: {
+    max_steps?: number;
+    max_policy_changes?: number;
+    used_steps?: number;
+    used_policy_changes?: number;
+    remaining_steps?: number;
+    remaining_policy_changes?: number;
+  };
 }
 
 export interface Command {

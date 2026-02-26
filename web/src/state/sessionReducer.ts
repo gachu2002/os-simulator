@@ -1,27 +1,14 @@
 import type { SessionEvent, SnapshotDTO } from "../lib/types";
 
-export interface LogEntry {
-  id: number;
-  sequence: number;
-  type: string;
-  tick: number;
-  traceHash: string;
-  detail: string;
-}
-
 export interface SessionState {
   connected: boolean;
-  sessionID: string;
   snapshot: SnapshotDTO | null;
   lastSequence: number;
-  nextLogID: number;
   error: string;
-  logs: LogEntry[];
 }
 
 export type SessionAction =
   | { type: "session.reset" }
-  | { type: "session.created"; sessionID: string; snapshot: SnapshotDTO }
   | { type: "socket.connected" }
   | { type: "socket.disconnected" }
   | { type: "event.received"; event: SessionEvent }
@@ -29,12 +16,9 @@ export type SessionAction =
 
 export const initialSessionState: SessionState = {
   connected: false,
-  sessionID: "",
   snapshot: null,
   lastSequence: 0,
-  nextLogID: 1,
   error: "",
-  logs: [],
 };
 
 export function sessionReducer(
@@ -44,23 +28,6 @@ export function sessionReducer(
   switch (action.type) {
     case "session.reset":
       return initialSessionState;
-    case "session.created":
-      return {
-        ...state,
-        sessionID: action.sessionID,
-        snapshot: action.snapshot,
-        nextLogID: state.nextLogID + 1,
-        logs: appendLog(
-          state.logs,
-          makeLogEntry(state.nextLogID, {
-            sequence: 1,
-            type: "session.created",
-            tick: action.snapshot.tick,
-            traceHash: action.snapshot.trace_hash,
-            detail: `session=${action.sessionID}`,
-          }),
-        ),
-      };
     case "socket.connected":
       return {
         ...state,
@@ -82,17 +49,6 @@ export function sessionReducer(
           ...state,
           lastSequence: event.sequence,
           error: event.error ?? "unknown session error",
-          nextLogID: state.nextLogID + 1,
-          logs: appendLog(
-            state.logs,
-            makeLogEntry(state.nextLogID, {
-              sequence: event.sequence,
-              type: event.type,
-              tick: state.snapshot?.tick ?? 0,
-              traceHash: state.snapshot?.trace_hash ?? "",
-              detail: event.error ?? "unknown session error",
-            }),
-          ),
         };
       }
       if (!event.snapshot) {
@@ -103,17 +59,6 @@ export function sessionReducer(
         lastSequence: event.sequence,
         error: "",
         snapshot: event.snapshot,
-        nextLogID: state.nextLogID + 1,
-        logs: appendLog(
-          state.logs,
-          makeLogEntry(state.nextLogID, {
-            sequence: event.sequence,
-            type: event.type,
-            tick: event.snapshot.tick,
-            traceHash: event.snapshot.trace_hash,
-            detail: event.snapshot.last_command ?? "snapshot",
-          }),
-        ),
       };
     }
     case "error":
@@ -124,16 +69,4 @@ export function sessionReducer(
     default:
       return state;
   }
-}
-
-function appendLog(logs: LogEntry[], entry: LogEntry): LogEntry[] {
-  const next = [...logs, entry];
-  if (next.length <= 200) {
-    return next;
-  }
-  return next.slice(next.length - 200);
-}
-
-function makeLogEntry(id: number, entry: Omit<LogEntry, "id">): LogEntry {
-  return { id, ...entry };
 }

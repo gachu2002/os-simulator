@@ -3,9 +3,18 @@ package realtime
 import "os-simulator-plan/internal/sim"
 
 type LessonStageSummary struct {
-	Index int    `json:"index"`
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	Index           int                `json:"index"`
+	ID              string             `json:"id"`
+	Title           string             `json:"title"`
+	Theory          string             `json:"theory,omitempty"`
+	Objective       string             `json:"objective"`
+	PassConditions  []string           `json:"pass_conditions,omitempty"`
+	Prerequisites   []string           `json:"prerequisites,omitempty"`
+	AllowedCommands []string           `json:"allowed_commands,omitempty"`
+	Limits          ChallengeLimitsDTO `json:"limits"`
+	Attempts        int                `json:"attempts"`
+	Completed       bool               `json:"completed"`
+	Unlocked        bool               `json:"unlocked"`
 }
 
 type LessonSummary struct {

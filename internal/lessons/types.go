@@ -68,12 +68,21 @@ type StageOutput struct {
 	FilesystemOK bool
 }
 
+type ValidationResult struct {
+	Name    string
+	Type    string
+	Key     string
+	Passed  bool
+	Message string
+}
+
 type StageResult struct {
-	Passed      bool
-	FeedbackKey string
-	Hint        string
-	HintLevel   int
-	Output      StageOutput
+	Passed           bool
+	FeedbackKey      string
+	Hint             string
+	HintLevel        int
+	Output           StageOutput
+	ValidatorResults []ValidationResult
 }
 
 type CompletionAnalytics struct {

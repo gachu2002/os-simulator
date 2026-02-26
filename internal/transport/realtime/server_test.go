@@ -15,9 +15,8 @@ func TestTransportDeterministicTimelineHash(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
-	body := map[string]any{"seed": 77, "policy": "rr", "quantum": 2}
-	s1 := createSession(t, ts.URL, body)
-	s2 := createSession(t, ts.URL, body)
+	s1 := startChallengeSession(t, ts.URL, "learner-deterministic-1")
+	s2 := startChallengeSession(t, ts.URL, "learner-deterministic-2")
 
 	hash1 := runScenarioOverWS(t, ts.URL, s1.SessionID)
 	hash2 := runScenarioOverWS(t, ts.URL, s2.SessionID)
@@ -31,13 +30,16 @@ func TestCommandValidationAndSequenceOrdering(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
-	s := createSession(t, ts.URL, map[string]any{"seed": 9})
+	s := startChallengeSession(t, ts.URL, "learner-sequence")
 	conn := dialWS(t, ts.URL, s.SessionID)
 	defer func() { _ = conn.Close() }()
 
 	connected := mustReadEvent(t, conn)
-	if connected.Sequence != 2 {
-		t.Fatalf("expected connected sequence 2, got %d", connected.Sequence)
+	if connected.Type != "session.snapshot" {
+		t.Fatalf("expected connected snapshot event, got %s", connected.Type)
+	}
+	if connected.Sequence == 0 {
+		t.Fatalf("expected positive sequence, got %d", connected.Sequence)
 	}
 
 	mustWriteCommand(t, conn, Command{Name: "run", Count: 0})
@@ -45,8 +47,8 @@ func TestCommandValidationAndSequenceOrdering(t *testing.T) {
 	if errEvent.Type != "session.error" {
 		t.Fatalf("expected session.error, got %s", errEvent.Type)
 	}
-	if errEvent.Sequence != 3 {
-		t.Fatalf("expected sequence 3 after invalid command, got %d", errEvent.Sequence)
+	if errEvent.Sequence != connected.Sequence+1 {
+		t.Fatalf("expected monotonic sequence after invalid command, got connected=%d error=%d", connected.Sequence, errEvent.Sequence)
 	}
 
 	mustWriteCommand(t, conn, Command{Name: "step", Count: 1})
@@ -54,8 +56,8 @@ func TestCommandValidationAndSequenceOrdering(t *testing.T) {
 	if snapEvent.Type != "session.snapshot" {
 		t.Fatalf("expected session.snapshot, got %s", snapEvent.Type)
 	}
-	if snapEvent.Sequence != 4 {
-		t.Fatalf("expected sequence 4 after valid command, got %d", snapEvent.Sequence)
+	if snapEvent.Sequence != errEvent.Sequence+1 {
+		t.Fatalf("expected monotonic sequence after valid command, got error=%d snapshot=%d", errEvent.Sequence, snapEvent.Sequence)
 	}
 }
 
@@ -65,7 +67,7 @@ func TestCORSPreflightAndHeaders(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
-	req, err := http.NewRequest(http.MethodOptions, ts.URL+"/sessions", nil)
+	req, err := http.NewRequest(http.MethodOptions, ts.URL+"/challenges/start", nil)
 	if err != nil {
 		t.Fatalf("new request failed: %v", err)
 	}
@@ -90,7 +92,7 @@ func TestErrorEnvelopeIncludesRequestID(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
-	req, err := http.NewRequest(http.MethodGet, ts.URL+"/sessions", nil)
+	req, err := http.NewRequest(http.MethodGet, ts.URL+"/challenges/start", nil)
 	if err != nil {
 		t.Fatalf("new request failed: %v", err)
 	}
@@ -117,26 +119,30 @@ func TestErrorEnvelopeIncludesRequestID(t *testing.T) {
 	}
 }
 
-func createSession(t *testing.T, baseURL string, payload map[string]any) CreateSessionResponse {
+func startChallengeSession(t *testing.T, baseURL, learnerID string) ChallengeStartResponse {
 	t.Helper()
-	b, err := json.Marshal(payload)
+	b, err := json.Marshal(map[string]any{
+		"lesson_id":   "l01-sched-rr-basics",
+		"stage_index": 0,
+		"learner_id":  learnerID,
+	})
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	resp, err := http.Post(baseURL+"/sessions", "application/json", bytes.NewReader(b))
+	resp, err := http.Post(baseURL+"/challenges/start", "application/json", bytes.NewReader(b))
 	if err != nil {
-		t.Fatalf("create session request failed: %v", err)
+		t.Fatalf("challenge start request failed: %v", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("expected status %d got %d", http.StatusCreated, resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d got %d", http.StatusOK, resp.StatusCode)
 	}
-	var out CreateSessionResponse
+	var out ChallengeStartResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		t.Fatalf("decode create session response failed: %v", err)
+		t.Fatalf("decode challenge start response failed: %v", err)
 	}
-	if out.SessionID == "" || out.Snapshot == nil {
-		t.Fatalf("invalid create session response: %+v", out)
+	if out.SessionID == "" {
+		t.Fatalf("invalid challenge start response: %+v", out)
 	}
 	return out
 }
@@ -147,12 +153,6 @@ func runScenarioOverWS(t *testing.T, baseURL, sessionID string) string {
 	defer func() { _ = conn.Close() }()
 
 	_ = mustReadEvent(t, conn)
-
-	mustWriteCommand(t, conn, Command{Name: "spawn", Process: "demo", Program: "COMPUTE 3; EXIT"})
-	spawn := mustReadEvent(t, conn)
-	if spawn.Snapshot == nil {
-		t.Fatalf("spawn event missing snapshot")
-	}
 
 	mustWriteCommand(t, conn, Command{Name: "step", Count: 12})
 	step := mustReadEvent(t, conn)

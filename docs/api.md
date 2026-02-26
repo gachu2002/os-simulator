@@ -3,7 +3,6 @@
 ## Base Endpoints
 
 - `GET /healthz`
-- `POST /sessions`
 - `GET /lessons`
 - `POST /challenges/start`
 - `POST /challenges/grade`
@@ -29,19 +28,11 @@ All HTTP errors return:
 
 `X-Request-ID` is echoed in response headers; clients may send their own.
 
-## Session Create
-
-### `POST /sessions`
-
-Creates deterministic in-memory session.
-
-Response: `201` with initial snapshot payload.
-
 ## Lessons List
 
 ### `GET /lessons`
 
-Returns lesson summaries with lightweight stage metadata (`index`, `id`, `title`). Default catalog currently ships 20 lessons with 3 stages each.
+Returns lesson summaries with stage metadata (`index`, `id`, `title`, `theory`, `objective`, `pass_conditions`, `prerequisites`, `allowed_commands`, `limits`) plus progress status (`attempts`, `completed`, `unlocked`). Use optional query param `learner_id` to scope unlock/progress per learner. Default catalog currently ships 20 lessons with 3 stages each.
 
 ## Challenge Start
 
@@ -52,11 +43,12 @@ Body:
 ```json
 {
   "lesson_id": "l01-sched-rr-basics",
-  "stage_index": 0
+  "stage_index": 0,
+  "learner_id": "learner-123"
 }
 ```
 
-Returns challenge attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits).
+Returns lesson-stage attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits).
 
 ## Challenge Grade
 
@@ -66,11 +58,12 @@ Body:
 
 ```json
 {
-  "attempt_id": "a-000001"
+  "attempt_id": "a-000001",
+  "learner_id": "learner-123"
 }
 ```
 
-Grades the current challenge session state and returns pass/fail, hint progression fields, output snapshot fields, and completion analytics.
+Grades the current lesson-stage session state and returns pass/fail, hint progression fields, output snapshot fields, completion analytics, and per-validator check results in `validator_results`. `learner_id` must match the learner that started the attempt.
 
 ## WebSocket Stream
 
@@ -89,3 +82,5 @@ Outbound event types:
 
 - `session.snapshot`
 - `session.error`
+
+For challenge sessions, `session.snapshot` may include `snapshot.challenge` budget fields (`max_steps`, `used_steps`, `remaining_steps`, and policy-change counterparts) to drive live exercise limits in the UI.

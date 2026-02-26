@@ -121,6 +121,23 @@ func TestChallengeSessionCommandLimitsAreEnforced(t *testing.T) {
 	}
 }
 
+func TestChallengeAttemptIsScopedToLearner(t *testing.T) {
+	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
+	defer ts.Close()
+
+	startRes := startChallenge(t, ts.URL, ChallengeStartRequest{
+		LessonID:   "l01-sched-rr-basics",
+		StageIndex: 0,
+		LearnerID:  "learner-a",
+	})
+
+	resp := gradeChallengeRaw(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID, LearnerID: "learner-b"})
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusForbidden)
+	}
+}
+
 func startChallenge(t *testing.T, baseURL string, req ChallengeStartRequest) ChallengeStartResponse {
 	t.Helper()
 	resp := postJSON(t, baseURL+"/challenges/start", req)

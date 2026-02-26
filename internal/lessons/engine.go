@@ -50,6 +50,12 @@ type Engine struct {
 	progress *ProgressStore
 }
 
+type StageStatus struct {
+	Attempts  int
+	Completed bool
+	Unlocked  bool
+}
+
 func NewEngine() *Engine {
 	return NewEngineWithCatalog(DefaultCatalog())
 }
@@ -113,19 +119,63 @@ func (e *Engine) PrepareStage(lessonID string, stageIndex int) (PreparedStage, e
 	}, nil
 }
 
-func (e *Engine) GradeStage(prepared PreparedStage, output StageOutput) StageResult {
-	stage := prepared.Stage
-	for _, v := range stage.Validators {
-		ok, _ := validate(output, v)
-		if !ok {
-			prog := e.progress.Record(prepared.LessonID, stage.ID, false)
-			hintLevel, hint := hintForAttempt(stage.Hints, prog.Attempts)
-			return StageResult{Passed: false, FeedbackKey: "validator." + v.Name, Hint: hint, HintLevel: hintLevel, Output: output}
+func (e *Engine) StageStatus(lessonID string, stage Stage) StageStatus {
+	progress := e.progress.Get(lessonID, stage.ID)
+	unlocked := true
+	for _, prereq := range stage.Prerequisites {
+		if !e.isPrerequisiteCompleted(prereq) {
+			unlocked = false
+			break
 		}
 	}
 
-	e.progress.Record(prepared.LessonID, stage.ID, true)
-	return StageResult{Passed: true, FeedbackKey: "stage." + stage.ID + ".passed", Output: output}
+	return StageStatus{
+		Attempts:  progress.Attempts,
+		Completed: progress.Completed,
+		Unlocked:  unlocked,
+	}
+}
+
+func (e *Engine) GradeStage(prepared PreparedStage, output StageOutput) StageResult {
+	stage := prepared.Stage
+	results := make([]ValidationResult, 0, len(stage.Validators))
+	firstFailedName := ""
+	for _, v := range stage.Validators {
+		ok, message := validate(output, v)
+		results = append(results, ValidationResult{
+			Name:    v.Name,
+			Type:    v.Type,
+			Key:     v.Key,
+			Passed:  ok,
+			Message: message,
+		})
+		if !ok {
+			if firstFailedName == "" {
+				firstFailedName = v.Name
+			}
+		}
+	}
+
+	passed := firstFailedName == ""
+	prog := e.progress.Record(prepared.LessonID, stage.ID, passed)
+	if !passed {
+		hintLevel, hint := hintForAttempt(stage.Hints, prog.Attempts)
+		return StageResult{
+			Passed:           false,
+			FeedbackKey:      "validator." + firstFailedName,
+			Hint:             hint,
+			HintLevel:        hintLevel,
+			Output:           output,
+			ValidatorResults: results,
+		}
+	}
+
+	return StageResult{
+		Passed:           true,
+		FeedbackKey:      "stage." + stage.ID + ".passed",
+		Output:           output,
+		ValidatorResults: results,
+	}
 }
 
 func (e *Engine) isPrerequisiteCompleted(key string) bool {

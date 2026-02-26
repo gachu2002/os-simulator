@@ -1,9 +1,6 @@
 package realtime
 
 import (
-	"encoding/json"
-	"errors"
-	"io"
 	"net/http"
 	"strings"
 
@@ -12,31 +9,6 @@ import (
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]any{"status": "ok", "protocol_version": ProtocolVersion})
-}
-
-func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
-		return
-	}
-	defer func() { _ = r.Body.Close() }()
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-
-	var cfg SessionConfig
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
-		respondError(w, r, http.StatusBadRequest, "invalid_body", "invalid JSON body")
-		return
-	}
-
-	session, err := s.manager.Create(cfg)
-	if err != nil {
-		respondError(w, r, http.StatusBadRequest, "invalid_session_config", err.Error())
-		return
-	}
-	ev := session.SnapshotEvent("init")
-	respondJSON(w, http.StatusCreated, CreateSessionResponse{SessionID: session.ID(), Snapshot: ev.Snapshot})
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {

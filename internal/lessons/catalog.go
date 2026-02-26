@@ -1,13 +1,10 @@
 package lessons
 
-import (
-	"fmt"
-
-	"os-simulator-plan/internal/sim"
-)
+import "os-simulator-plan/internal/sim"
 
 type cpuLessonSpec struct {
 	id    string
+	title string
 	seed  uint64
 	p1    string
 	p2    string
@@ -16,6 +13,7 @@ type cpuLessonSpec struct {
 
 type memoryLessonSpec struct {
 	id      string
+	title   string
 	seed    uint64
 	frames  int
 	program string
@@ -25,6 +23,7 @@ type memoryLessonSpec struct {
 
 type ioLessonSpec struct {
 	id      string
+	title   string
 	seed    uint64
 	program string
 	steps   int
@@ -34,38 +33,38 @@ func DefaultCatalog() map[string]Lesson {
 	lessons := make([]Lesson, 0, 20)
 
 	cpuSpecs := []cpuLessonSpec{
-		{id: "l01-sched-rr-basics", seed: 11, p1: "COMPUTE 4; EXIT", p2: "COMPUTE 4; EXIT", steps: 20},
-		{id: "l02-sched-fifo-baseline", seed: 12, p1: "COMPUTE 5; EXIT", p2: "COMPUTE 2; EXIT", steps: 20},
-		{id: "l03-sched-mlfq-balance", seed: 13, p1: "COMPUTE 6; EXIT", p2: "COMPUTE 6; EXIT", steps: 24},
-		{id: "l04-response-under-rr", seed: 14, p1: "COMPUTE 3; EXIT", p2: "COMPUTE 7; EXIT", steps: 22},
-		{id: "l05-throughput-shared-cpu", seed: 15, p1: "COMPUTE 4; EXIT", p2: "COMPUTE 4; EXIT", steps: 18},
-		{id: "l06-preemption-check", seed: 16, p1: "COMPUTE 5; EXIT", p2: "COMPUTE 5; EXIT", steps: 24},
+		{id: "l01-sched-rr-basics", title: "Round Robin Dispatch Basics", seed: 11, p1: "COMPUTE 4; EXIT", p2: "COMPUTE 4; EXIT", steps: 20},
+		{id: "l02-sched-fifo-baseline", title: "FIFO Baseline and Ordering", seed: 12, p1: "COMPUTE 5; EXIT", p2: "COMPUTE 2; EXIT", steps: 20},
+		{id: "l03-sched-mlfq-balance", title: "MLFQ Fairness and Balance", seed: 13, p1: "COMPUTE 6; EXIT", p2: "COMPUTE 6; EXIT", steps: 24},
+		{id: "l04-response-under-rr", title: "Response Time under RR", seed: 14, p1: "COMPUTE 3; EXIT", p2: "COMPUTE 7; EXIT", steps: 22},
+		{id: "l05-throughput-shared-cpu", title: "Throughput on Shared CPU", seed: 15, p1: "COMPUTE 4; EXIT", p2: "COMPUTE 4; EXIT", steps: 18},
+		{id: "l06-preemption-check", title: "Preemption Behavior Check", seed: 16, p1: "COMPUTE 5; EXIT", p2: "COMPUTE 5; EXIT", steps: 24},
 	}
 	appendCPULessons(&lessons, cpuSpecs)
 
 	memorySpecs := []memoryLessonSpec{
-		{id: "l07-vm-fault-sequence", seed: 21, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x0 r; EXIT", steps: 12, faults: 4},
-		{id: "l08-vm-pressure-repeat", seed: 22, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x3000 r; EXIT", steps: 14, faults: 4},
-		{id: "l09-vm-tlb-activity", seed: 23, frames: 3, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x0 r; ACCESS 0x1000 r; EXIT", steps: 12, faults: 2},
-		{id: "l10-vm-replacement-fifo", seed: 24, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; EXIT", steps: 10, faults: 3},
-		{id: "l11-vm-mixed-access", seed: 25, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 w; ACCESS 0x2000 r; EXIT", steps: 10, faults: 3},
+		{id: "l07-vm-fault-sequence", title: "Page Fault Sequence", seed: 21, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x0 r; EXIT", steps: 12, faults: 4},
+		{id: "l08-vm-pressure-repeat", title: "Frame Pressure with Repeated Access", seed: 22, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x3000 r; EXIT", steps: 14, faults: 4},
+		{id: "l09-vm-tlb-activity", title: "TLB Hit and Miss Activity", seed: 23, frames: 3, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x0 r; ACCESS 0x1000 r; EXIT", steps: 12, faults: 2},
+		{id: "l10-vm-replacement-fifo", title: "FIFO Page Replacement", seed: 24, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; EXIT", steps: 10, faults: 3},
+		{id: "l11-vm-mixed-access", title: "Mixed Read/Write Access", seed: 25, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 w; ACCESS 0x2000 r; EXIT", steps: 10, faults: 3},
 	}
 	appendMemoryLessons(&lessons, memorySpecs, "l06-preemption-check:s3")
 
 	concurrencySpecs := []ioLessonSpec{
-		{id: "l12-irq-wakeup-read", seed: 31, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; COMPUTE 1; EXIT", steps: 14},
-		{id: "l13-terminal-write-irq", seed: 32, program: "SYSCALL open /docs/readme.txt; SYSCALL write 3; COMPUTE 1; EXIT", steps: 10},
-		{id: "l14-sleep-wakeup", seed: 33, program: "SYSCALL sleep 2; COMPUTE 1; EXIT", steps: 10},
-		{id: "l15-mixed-blocking", seed: 34, program: "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL sleep 2; EXIT", steps: 16},
+		{id: "l12-irq-wakeup-read", title: "Read Syscall IRQ Wakeup", seed: 31, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; COMPUTE 1; EXIT", steps: 14},
+		{id: "l13-terminal-write-irq", title: "Terminal Write Interrupt Path", seed: 32, program: "SYSCALL open /docs/readme.txt; SYSCALL write 3; COMPUTE 1; EXIT", steps: 10},
+		{id: "l14-sleep-wakeup", title: "Sleep and Wakeup Timing", seed: 33, program: "SYSCALL sleep 2; COMPUTE 1; EXIT", steps: 10},
+		{id: "l15-mixed-blocking", title: "Mixed Blocking Workload", seed: 34, program: "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL sleep 2; EXIT", steps: 16},
 	}
 	appendConcurrencyLessons(&lessons, concurrencySpecs, "l11-vm-mixed-access:s3")
 
 	persistenceSpecs := []ioLessonSpec{
-		{id: "l16-fs-open-traversal", seed: 41, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL exit", steps: 12},
-		{id: "l17-fs-read-blockmap", seed: 42, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL exit", steps: 14},
-		{id: "l18-fs-write-blockmap", seed: 43, program: "SYSCALL open /docs/readme.txt; SYSCALL write 4; SYSCALL exit", steps: 14},
-		{id: "l19-fs-read-write", seed: 44, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL write 3; SYSCALL exit", steps: 16},
-		{id: "l20-fs-invariants", seed: 45, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL write 2; SYSCALL exit", steps: 16},
+		{id: "l16-fs-open-traversal", title: "Filesystem Path Traversal", seed: 41, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL exit", steps: 12},
+		{id: "l17-fs-read-blockmap", title: "Read Path Block Mapping", seed: 42, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL exit", steps: 14},
+		{id: "l18-fs-write-blockmap", title: "Write Path Block Mapping", seed: 43, program: "SYSCALL open /docs/readme.txt; SYSCALL write 4; SYSCALL exit", steps: 14},
+		{id: "l19-fs-read-write", title: "Read/Write Sequence", seed: 44, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL write 3; SYSCALL exit", steps: 16},
+		{id: "l20-fs-invariants", title: "Filesystem Invariants", seed: 45, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL write 2; SYSCALL exit", steps: 16},
 	}
 	appendPersistenceLessons(&lessons, persistenceSpecs, "l15-mixed-blocking:s3")
 
@@ -147,7 +146,7 @@ func cpuLesson(spec cpuLessonSpec, lessonPrereq string) Lesson {
 
 	return Lesson{
 		ID:     spec.id,
-		Title:  fmt.Sprintf("CPU Virtualization %s", spec.id),
+		Title:  spec.title,
 		Module: "cpu-virtualization",
 		Stages: []Stage{
 			{
@@ -202,7 +201,7 @@ func memoryLesson(spec memoryLessonSpec, lessonPrereq string) Lesson {
 
 	return Lesson{
 		ID:     spec.id,
-		Title:  fmt.Sprintf("Memory %s", spec.id),
+		Title:  spec.title,
 		Module: "memory",
 		Stages: []Stage{
 			{
@@ -256,7 +255,7 @@ func concurrencyLesson(spec ioLessonSpec, lessonPrereq string) Lesson {
 
 	return Lesson{
 		ID:     spec.id,
-		Title:  fmt.Sprintf("Concurrency %s", spec.id),
+		Title:  spec.title,
 		Module: "concurrency",
 		Stages: []Stage{
 			{
@@ -310,7 +309,7 @@ func persistenceLesson(spec ioLessonSpec, lessonPrereq string) Lesson {
 
 	return Lesson{
 		ID:     spec.id,
-		Title:  fmt.Sprintf("Persistence %s", spec.id),
+		Title:  spec.title,
 		Module: "persistence",
 		Stages: []Stage{
 			{

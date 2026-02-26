@@ -1,17 +1,13 @@
 # 04) Web UI
 
-React + TypeScript control plane organized into two learning modes: Sandbox and Challenge.
+React + TypeScript challenge interface for OSTEP lesson-stage workflow.
 
 ```mermaid
 flowchart TB
-  APP[App Router by URL mode] --> SBX[/sandbox]
-  APP --> CHAL[/challenge]
-  SBX --> CTRL[Control Bar]
-  SBX --> STATUS[Status Cards]
-  SBX --> LOG[Event Log]
-  CHAL --> LESSON[Challenge Runner]
+  APP[Challenge App] --> CHAL[/challenge]
+  CHAL --> LESSON[Lesson Stage Runner]
   CHAL --> CVIZ[Challenge Snapshot]
-  SBX --> VIZ
+  CHAL --> VIZ
   VIZ --> TL[Scheduler Timeline]
   VIZ --> MEM[Memory Panel]
   VIZ --> Q[Process Queues]
@@ -20,7 +16,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  HTTP[createSession/fetchLessons/runLesson] --> STATE[Reducer + Selectors + Query]
+  HTTP[createSession/fetchLessons/startChallenge/gradeChallenge] --> STATE[Reducer + Selectors + Query]
   WS[session events] --> STATE
   RUN[Challenge run output] --> MAP[challenge snapshot mapper]
   MAP --> STATE

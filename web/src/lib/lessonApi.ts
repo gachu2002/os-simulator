@@ -9,6 +9,15 @@ export interface LessonStageSummary {
   index: number;
   id: string;
   title: string;
+  theory?: string;
+  objective?: string;
+  pass_conditions?: string[];
+  prerequisites?: string[];
+  allowed_commands?: string[];
+  limits?: ChallengeLimits;
+  attempts?: number;
+  completed?: boolean;
+  unlocked?: boolean;
 }
 
 export interface LessonSummary {
@@ -66,10 +75,23 @@ export interface ChallengeGradeResponse {
   hint_level?: number;
   output: LessonRunOutput;
   analytics: CompletionAnalytics;
+  validator_results?: Array<{
+    name: string;
+    type: string;
+    key?: string;
+    passed: boolean;
+    message?: string;
+  }>;
 }
 
-export async function fetchLessons(baseURL: string): Promise<LessonSummary[]> {
-  const payload = await fetchJSON<LessonsResponse>(baseURL, "/lessons");
+export async function fetchLessonsForLearner(
+  baseURL: string,
+  learnerID: string,
+): Promise<LessonSummary[]> {
+  const payload = await fetchJSON<LessonsResponse>(
+    baseURL,
+    `/lessons?learner_id=${encodeURIComponent(learnerID)}`,
+  );
   return payload.lessons;
 }
 
@@ -77,21 +99,34 @@ export async function startChallenge(
   baseURL: string,
   lessonID: string,
   stageIndex: number,
+  learnerID?: string,
 ): Promise<ChallengeStartResponse> {
+  const body: Record<string, string | number> = {
+    lesson_id: lessonID,
+    stage_index: stageIndex,
+  };
+  if (learnerID && learnerID.trim() !== "") {
+    body.learner_id = learnerID;
+  }
   return fetchJSON<ChallengeStartResponse>(baseURL, "/challenges/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lesson_id: lessonID, stage_index: stageIndex }),
+    body: JSON.stringify(body),
   });
 }
 
 export async function gradeChallenge(
   baseURL: string,
   attemptID: string,
+  learnerID?: string,
 ): Promise<ChallengeGradeResponse> {
+  const body: Record<string, string> = { attempt_id: attemptID };
+  if (learnerID && learnerID.trim() !== "") {
+    body.learner_id = learnerID;
+  }
   return fetchJSON<ChallengeGradeResponse>(baseURL, "/challenges/grade", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ attempt_id: attemptID }),
+    body: JSON.stringify(body),
   });
 }

@@ -67,6 +67,16 @@ type SnapshotDTO struct {
 	Metrics         sim.SchedulingMetrics `json:"metrics"`
 	Memory          sim.MemorySnapshot    `json:"memory"`
 	LastCommand     string                `json:"last_command,omitempty"`
+	Challenge       *ChallengeStateDTO    `json:"challenge,omitempty"`
+}
+
+type ChallengeStateDTO struct {
+	MaxSteps           int `json:"max_steps,omitempty"`
+	MaxPolicyChanges   int `json:"max_policy_changes,omitempty"`
+	UsedSteps          int `json:"used_steps,omitempty"`
+	UsedPolicyChanges  int `json:"used_policy_changes,omitempty"`
+	RemainingSteps     int `json:"remaining_steps,omitempty"`
+	RemainingPolicyOps int `json:"remaining_policy_changes,omitempty"`
 }
 
 type Event struct {
@@ -75,9 +85,4 @@ type Event struct {
 	SessionID string       `json:"session_id"`
 	Snapshot  *SnapshotDTO `json:"snapshot,omitempty"`
 	Error     string       `json:"error,omitempty"`
-}
-
-type CreateSessionResponse struct {
-	SessionID string       `json:"session_id"`
-	Snapshot  *SnapshotDTO `json:"snapshot"`
 }

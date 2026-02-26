@@ -8,7 +8,7 @@ import (
 	"os-simulator-plan/internal/lessons"
 )
 
-var defaultChallengeAllowedCommands = []string{"spawn", "step", "run", "pause", "policy", "reset"}
+var defaultChallengeAllowedCommands = []string{"step", "run", "pause", "policy", "reset"}
 
 const (
 	defaultChallengeMaxSteps         = 40
@@ -18,6 +18,7 @@ const (
 type ChallengeAttempt struct {
 	AttemptID string
 	SessionID string
+	LearnerID string
 	Prepared  lessons.PreparedStage
 }
 
@@ -31,9 +32,9 @@ func NewChallengeAttemptStore() *ChallengeAttemptStore {
 	return &ChallengeAttemptStore{attempts: map[string]ChallengeAttempt{}}
 }
 
-func (s *ChallengeAttemptStore) Create(sessionID string, prepared lessons.PreparedStage) ChallengeAttempt {
+func (s *ChallengeAttemptStore) Create(sessionID, learnerID string, prepared lessons.PreparedStage) ChallengeAttempt {
 	attemptID := fmt.Sprintf("a-%06d", s.nextID.Add(1))
-	attempt := ChallengeAttempt{AttemptID: attemptID, SessionID: sessionID, Prepared: prepared}
+	attempt := ChallengeAttempt{AttemptID: attemptID, SessionID: sessionID, LearnerID: learnerID, Prepared: prepared}
 	s.mu.Lock()
 	s.attempts[attemptID] = attempt
 	s.mu.Unlock()

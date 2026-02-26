@@ -29,10 +29,10 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 		respondError(w, r, http.StatusBadRequest, "invalid_challenge_request", "lesson_id is required")
 		return
 	}
+	learnerID := normalizeLearnerID(req.LearnerID)
+	engine := s.lessonEngineForLearner(learnerID)
 
-	s.lessonMu.Lock()
-	prepared, err := s.lessonEngine.PrepareStage(req.LessonID, req.StageIndex)
-	s.lessonMu.Unlock()
+	prepared, err := engine.PrepareStage(req.LessonID, req.StageIndex)
 	if err != nil {
 		respondError(w, r, http.StatusBadRequest, "challenge_start_failed", err.Error())
 		return
@@ -68,7 +68,7 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 		maxPolicyChanges,
 	))
 
-	attempt := s.challengeAttempts.Create(session.ID(), prepared)
+	attempt := s.challengeAttempts.Create(session.ID(), learnerID, prepared)
 	respondJSON(w, http.StatusOK, ChallengeStartResponse{
 		AttemptID:       attempt.AttemptID,
 		SessionID:       attempt.SessionID,
@@ -104,10 +104,15 @@ func (s *Server) handleChallengeGrade(w http.ResponseWriter, r *http.Request) {
 		respondError(w, r, http.StatusBadRequest, "invalid_challenge_request", "attempt_id is required")
 		return
 	}
+	learnerID := normalizeLearnerID(req.LearnerID)
 
 	attempt, ok := s.challengeAttempts.Get(req.AttemptID)
 	if !ok {
 		respondError(w, r, http.StatusNotFound, "challenge_attempt_not_found", "challenge attempt not found")
+		return
+	}
+	if attempt.LearnerID != learnerID {
+		respondError(w, r, http.StatusForbidden, "challenge_attempt_forbidden", "challenge attempt belongs to another learner")
 		return
 	}
 
@@ -118,10 +123,9 @@ func (s *Server) handleChallengeGrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	output := session.StageOutput()
-	s.lessonMu.Lock()
-	result := s.lessonEngine.GradeStage(attempt.Prepared, output)
-	analytics := s.lessonEngine.CompletionAnalytics()
-	s.lessonMu.Unlock()
+	engine := s.lessonEngineForLearner(learnerID)
+	result := engine.GradeStage(attempt.Prepared, output)
+	analytics := engine.CompletionAnalytics()
 
 	respondJSON(w, http.StatusOK, ChallengeGradeResponse{
 		AttemptID:   attempt.AttemptID,
@@ -140,8 +144,23 @@ func (s *Server) handleChallengeGrade(w http.ResponseWriter, r *http.Request) {
 			Memory:       result.Output.Memory,
 			FilesystemOK: result.Output.FilesystemOK,
 		},
-		Analytics: convertAnalytics(analytics),
+		Analytics:        convertAnalytics(analytics),
+		ValidatorResults: convertValidatorResults(result.ValidatorResults),
 	})
+}
+
+func convertValidatorResults(in []lessons.ValidationResult) []ValidatorResultDTO {
+	out := make([]ValidatorResultDTO, 0, len(in))
+	for _, item := range in {
+		out = append(out, ValidatorResultDTO{
+			Name:    item.Name,
+			Type:    item.Type,
+			Key:     item.Key,
+			Passed:  item.Passed,
+			Message: item.Message,
+		})
+	}
+	return out
 }
 
 func challengeObjective(prepared lessons.PreparedStage) string {

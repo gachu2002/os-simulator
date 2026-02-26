@@ -10,6 +10,11 @@ type ChallengeCommandPolicy struct {
 	usedPolicyChange int
 }
 
+type ChallengeUsage struct {
+	UsedSteps         int
+	UsedPolicyChanges int
+}
+
 func NewChallengeCommandPolicy(allowedCommands []string, maxSteps, maxPolicyChanges int) ChallengeCommandPolicy {
 	allowed := make(map[string]struct{}, len(allowedCommands))
 	for _, name := range allowedCommands {
@@ -59,4 +64,8 @@ func (p *ChallengeCommandPolicy) Validate(cmd Command) error {
 	}
 
 	return nil
+}
+
+func (p ChallengeCommandPolicy) Usage() ChallengeUsage {
+	return ChallengeUsage{UsedSteps: p.usedSteps, UsedPolicyChanges: p.usedPolicyChange}
 }

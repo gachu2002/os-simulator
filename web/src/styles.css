@@ -82,6 +82,22 @@ body {
   width: fit-content;
 }
 
+.challenge-subnav {
+  margin-bottom: 0.6rem;
+}
+
+.mode-nav button.mode-link {
+  background: var(--surface-subtle);
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+.mode-nav button.mode-link.active {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .mode-link {
   text-decoration: none;
   text-transform: capitalize;
@@ -109,28 +125,21 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
-.session-panel,
 .challenge-setup-panel,
-.control-panel,
 .lesson-panel,
 .viz-suite,
-.log-panel,
 .timeline-panel,
 .memory-panel,
 .process-panel,
-.metrics-panel,
-.stat {
+.metrics-panel {
   background: var(--surface);
 }
 
-.session-panel,
 .challenge-setup-panel,
-.control-panel,
 .lesson-panel {
   border-left: 4px solid var(--accent-soft);
 }
 
-.session-form,
 .control-row,
 .lesson-controls {
   display: flex;
@@ -146,6 +155,48 @@ select:focus-visible {
   margin: 0.55rem 0 0;
   color: var(--muted);
   font-size: 0.84rem;
+}
+
+.lesson-learn-block {
+  margin-top: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+
+.lesson-learn-block h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+}
+
+.lesson-validator-results {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.validator-groups {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.validator-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem;
+  background: var(--surface-subtle);
+}
+
+.validator-group h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.84rem;
+}
+
+.hint-progress {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .hint {
@@ -216,26 +267,14 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.status-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.65rem;
-}
-
-.stat h2,
 .timeline-panel h2,
 .memory-panel h2,
 .process-panel h2,
 .metrics-panel h2,
-.log-panel h2,
 .viz-suite-header h2 {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 650;
-}
-
-.stat p {
-  margin: 0.35rem 0 0;
 }
 
 .hash {
@@ -371,8 +410,7 @@ td {
   font-size: 0.85rem;
 }
 
-.queue-column ul,
-.log-panel ul {
+.queue-column ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -386,26 +424,6 @@ td {
   font-size: 0.82rem;
 }
 
-.log-panel ul {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.log-panel li {
-  display: grid;
-  grid-template-columns: 56px minmax(120px, 1fr) 78px minmax(120px, 2fr);
-  gap: 0.45rem;
-  background: var(--surface-subtle);
-  border-radius: 8px;
-  padding: 0.42rem;
-  font-size: 0.82rem;
-}
-
-.seq {
-  color: var(--accent);
-  font-weight: 600;
-}
-
 .error {
   margin: 0.55rem 0 0;
   color: var(--error);
@@ -417,8 +435,7 @@ td {
   }
 
   .viz-grid,
-  .queue-grid,
-  .log-panel li {
+  .queue-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -175,6 +175,25 @@ func (s *Session) snapshotEventLocked(lastCommand string) Event {
 		Memory:          s.engine.MemoryView(),
 		LastCommand:     lastCommand,
 	}
+	if s.policy != nil {
+		usage := s.policy.Usage()
+		remainingSteps := s.policy.MaxSteps - usage.UsedSteps
+		if remainingSteps < 0 {
+			remainingSteps = 0
+		}
+		remainingPolicy := s.policy.MaxPolicyChanges - usage.UsedPolicyChanges
+		if remainingPolicy < 0 {
+			remainingPolicy = 0
+		}
+		snapshot.Challenge = &ChallengeStateDTO{
+			MaxSteps:           s.policy.MaxSteps,
+			MaxPolicyChanges:   s.policy.MaxPolicyChanges,
+			UsedSteps:          usage.UsedSteps,
+			UsedPolicyChanges:  usage.UsedPolicyChanges,
+			RemainingSteps:     remainingSteps,
+			RemainingPolicyOps: remainingPolicy,
+		}
+	}
 	return Event{
 		Type:      "session.snapshot",
 		Sequence:  s.nextSeq,

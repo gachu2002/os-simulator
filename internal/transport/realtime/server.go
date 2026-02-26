@@ -15,7 +15,8 @@ type Server struct {
 	manager           *SessionManager
 	challengeAttempts *ChallengeAttemptStore
 	lessonMu          sync.Mutex
-	lessonEngine      *lessons.Engine
+	lessonCatalog     map[string]lessons.Lesson
+	lessonEngines     map[string]*lessons.Engine
 	upgrader          websocket.Upgrader
 	origins           map[string]struct{}
 }
@@ -26,10 +27,15 @@ func NewServer(manager *SessionManager) *Server {
 
 func NewServerWithLessons(manager *SessionManager, lessonEngine *lessons.Engine) *Server {
 	origins := allowedOriginsFromEnv(os.Getenv("CORS_ALLOW_ORIGIN"))
+	catalog := make(map[string]lessons.Lesson)
+	for _, lesson := range lessonEngine.Lessons() {
+		catalog[lesson.ID] = lesson
+	}
 	return &Server{
 		manager:           manager,
 		challengeAttempts: NewChallengeAttemptStore(),
-		lessonEngine:      lessonEngine,
+		lessonCatalog:     catalog,
+		lessonEngines:     map[string]*lessons.Engine{},
 		origins:           origins,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
@@ -41,10 +47,24 @@ func NewServerWithLessons(manager *SessionManager, lessonEngine *lessons.Engine)
 	}
 }
 
+func (s *Server) lessonEngineForLearner(learnerID string) *lessons.Engine {
+	s.lessonMu.Lock()
+	defer s.lessonMu.Unlock()
+	if learnerID == "" {
+		learnerID = "anonymous"
+	}
+	engine, ok := s.lessonEngines[learnerID]
+	if ok {
+		return engine
+	}
+	engine = lessons.NewEngineWithCatalog(s.lessonCatalog)
+	s.lessonEngines[learnerID] = engine
+	return engine
+}
+
 func (s *Server) Handler() http.Handler {
 	router := chi.NewRouter()
 	router.HandleFunc("/healthz", s.handleHealth)
-	router.HandleFunc("/sessions", s.handleSessions)
 	router.HandleFunc("/lessons", s.handleLessons)
 	router.HandleFunc("/challenges/start", s.handleChallengeStart)
 	router.HandleFunc("/challenges/grade", s.handleChallengeGrade)

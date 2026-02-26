@@ -50,7 +50,7 @@ describe("LessonRunnerPanel", () => {
           stage_title: "Observe scheduler behavior",
           module: "cpu",
           objective: "Observe scheduler behavior",
-          allowed_commands: ["step", "run", "reset", "pause", "spawn", "policy"],
+          allowed_commands: ["step", "run", "reset", "pause", "policy"],
           limits: { max_steps: 40, max_policy_changes: 3 },
         }),
       )
@@ -109,19 +109,19 @@ describe("LessonRunnerPanel", () => {
       expect(screen.getByText("cpu - CPU Basics")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Start Challenge" }));
+    await user.click(screen.getByRole("button", { name: "Start Stage" }));
 
     await waitFor(() => {
       expect(screen.getByText("objective: Observe scheduler behavior")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Check Result" }));
 
     await waitFor(() => {
       expect(screen.getByText("failed")).toBeInTheDocument();
       expect(screen.getByText("result: validator.completed")).toBeInTheDocument();
       expect(screen.getByText("Hint L1: Try stepping until completion.")).toBeInTheDocument();
-      expect(screen.getByText("Completed steps: 1/20 (5%)")).toBeInTheDocument();
+      expect(screen.getByText("Completed stages: 1/20 (5%)")).toBeInTheDocument();
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);

@@ -25,14 +25,13 @@ Every mission must follow the same loop:
 - Stage mission: one executable step inside a lesson.
 - Stage key: `<lesson_id>:<stage_id>` prerequisite/unlock identifier.
 
-## Product Modes
+## Product Mode
 
-The user experience is organized into two explicit modes:
+The user experience is organized around challenge mode:
 
-- Sandbox: free simulation and experimentation.
-- Challenge: constrained challenge-step assessments with grading.
+- Challenge: constrained lesson-stage assessments with grading.
 
-Each screen should belong to one mode only.
+Each screen should support the challenge learning loop.
 
 ## Curriculum Order
 

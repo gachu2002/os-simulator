@@ -6,7 +6,6 @@ export default defineConfig({
   server: {
     proxy: {
       "/healthz": "http://127.0.0.1:8080",
-      "/sessions": "http://127.0.0.1:8080",
       "/lessons": "http://127.0.0.1:8080",
       "/challenges": "http://127.0.0.1:8080",
       "/ws": {

@@ -15,12 +15,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type createSessionResponse struct {
-	SessionID string `json:"session_id"`
-}
-
 type challengeStartResponse struct {
 	AttemptID string `json:"attempt_id"`
+	SessionID string `json:"session_id"`
 }
 
 func main() {
@@ -40,17 +37,12 @@ func main() {
 	if err := getOK(client, *backend+"/lessons"); err != nil {
 		fatalf("lessons failed: %v", err)
 	}
-	attemptID, err := startChallenge(client, *backend)
+	attemptID, sessionID, err := startChallenge(client, *backend)
 	if err != nil {
 		fatalf("challenge start failed: %v", err)
 	}
 	if err := postOK(client, *backend+"/challenges/grade", map[string]any{"attempt_id": attemptID}); err != nil {
 		fatalf("challenge grade failed: %v", err)
-	}
-
-	sessionID, err := createSession(client, *backend)
-	if err != nil {
-		fatalf("session create failed: %v", err)
 	}
 	if err := wsSmoke(*backend, sessionID); err != nil {
 		fatalf("websocket smoke failed: %v", err)
@@ -61,28 +53,28 @@ func main() {
 	}
 }
 
-func startChallenge(client *http.Client, backend string) (string, error) {
+func startChallenge(client *http.Client, backend string) (string, string, error) {
 	b, err := json.Marshal(map[string]any{"lesson_id": "l01-sched-rr-basics", "stage_index": 0})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	resp, err := client.Post(backend+"/challenges/start", "application/json", bytes.NewReader(b))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
+		return "", "", fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
 	}
 	var out challengeStartResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", err
+		return "", "", err
 	}
-	if out.AttemptID == "" {
-		return "", fmt.Errorf("empty attempt id")
+	if out.AttemptID == "" || out.SessionID == "" {
+		return "", "", fmt.Errorf("empty challenge identifiers")
 	}
-	return out.AttemptID, nil
+	return out.AttemptID, out.SessionID, nil
 }
 
 func getOK(client *http.Client, endpoint string) error {
@@ -113,30 +105,6 @@ func postOK(client *http.Client, endpoint string, payload any) error {
 		return fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
 	}
 	return nil
-}
-
-func createSession(client *http.Client, backend string) (string, error) {
-	b, err := json.Marshal(map[string]any{"seed": 1, "policy": "rr", "quantum": 2})
-	if err != nil {
-		return "", err
-	}
-	resp, err := client.Post(backend+"/sessions", "application/json", bytes.NewReader(b))
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
-	}
-	var out createSessionResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", err
-	}
-	if out.SessionID == "" {
-		return "", fmt.Errorf("empty session id")
-	}
-	return out.SessionID, nil
 }
 
 func wsSmoke(backend, sessionID string) error {

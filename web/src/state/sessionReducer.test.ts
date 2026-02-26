@@ -9,12 +9,11 @@ import {
 function seededState(): SessionState {
   return {
     ...initialSessionState,
-    sessionID: "s-000001",
   };
 }
 
 describe("sessionReducer", () => {
-  it("updates snapshot and log on ordered snapshot event", () => {
+  it("updates snapshot on ordered snapshot event", () => {
     const state = seededState();
     const next = sessionReducer(state, {
       type: "event.received",
@@ -59,8 +58,6 @@ describe("sessionReducer", () => {
 
     expect(next.lastSequence).toBe(2);
     expect(next.snapshot?.tick).toBe(5);
-    expect(next.logs).toHaveLength(1);
-    expect(next.logs[0].detail).toBe("step");
   });
 
   it("ignores out-of-order events for deterministic state updates", () => {

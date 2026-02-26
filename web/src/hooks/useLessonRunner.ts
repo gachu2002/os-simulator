@@ -2,12 +2,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import {
-  fetchLessons,
+  fetchLessonsForLearner,
   gradeChallenge,
   startChallenge,
   type ChallengeGradeResponse,
   type ChallengeStartResponse,
 } from "../lib/lessonApi";
+import { getOrCreateLearnerID } from "../lib/learner";
 import type { Command } from "../lib/types";
 import { connectSessionSocket, type SessionSocket } from "../lib/ws";
 import { initialSessionState, sessionReducer } from "../state/sessionReducer";
@@ -26,19 +27,21 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
   const [policy, setPolicy] = useState<"fifo" | "rr" | "mlfq">("rr");
   const [quantum, setQuantum] = useState(2);
   const socketRef = useRef<SessionSocket | null>(null);
+  const [learnerID] = useState(() => getOrCreateLearnerID());
 
   const lessonsQuery = useQuery({
-    queryKey: ["challenges", baseURL],
-    queryFn: () => fetchLessons(baseURL),
+    queryKey: ["challenges", baseURL, learnerID],
+    queryFn: () => fetchLessonsForLearner(baseURL, learnerID),
   });
 
   const startChallengeMutation = useMutation({
     mutationFn: ({ lessonID, stageIndex }: { lessonID: string; stageIndex: number }) =>
-      startChallenge(baseURL, lessonID, stageIndex),
+      startChallenge(baseURL, lessonID, stageIndex, learnerID),
   });
 
   const gradeChallengeMutation = useMutation({
-    mutationFn: ({ attemptID }: { attemptID: string }) => gradeChallenge(baseURL, attemptID),
+    mutationFn: ({ attemptID }: { attemptID: string }) =>
+      gradeChallenge(baseURL, attemptID, learnerID),
   });
 
   const [attempt, setAttempt] = useState<ChallengeStartResponse | null>(null);
@@ -79,6 +82,13 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
     return selectedLesson.stages[0]?.index ?? 0;
   }, [selectedLesson, selectedStageIndexState]);
 
+  const selectedStage = useMemo(() => {
+    if (!selectedLesson) {
+      return null;
+    }
+    return selectedLesson.stages.find((stage) => stage.index === selectedStageIndex) ?? null;
+  }, [selectedLesson, selectedStageIndex]);
+
   const errorMessage = useMemo(() => {
     if (runError !== "") {
       return runError;
@@ -103,7 +113,8 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
   const handleLessonChange = useCallback(
     (lessonID: string) => {
       setSelectedLessonIDState(lessonID);
-      const stage = lessons.find((lesson) => lesson.id === lessonID)?.stages[0];
+      const lesson = lessons.find((item) => item.id === lessonID);
+      const stage = lesson?.stages.find((item) => item.unlocked !== false) ?? lesson?.stages[0];
       setSelectedStageIndexState(stage?.index ?? 0);
     },
     [lessons],
@@ -111,6 +122,10 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
 
   const handleStart = useCallback(async () => {
     if (!selectedLessonID) {
+      return;
+    }
+    if (selectedStage?.unlocked === false) {
+      setRunError("this stage is locked: complete prerequisites first");
       return;
     }
 
@@ -147,6 +162,7 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
     baseURL,
     selectedLessonID,
     selectedStageIndex,
+    selectedStage,
     startChallengeMutation,
   ]);
 
@@ -181,6 +197,7 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
     selectedLesson,
     selectedLessonID,
     selectedStageIndex,
+    selectedStage,
     runResult,
     attempt,
     policy,
