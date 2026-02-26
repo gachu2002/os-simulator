@@ -1,40 +1,54 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import {
   fetchLessons,
-  runLessonStage,
-  type LessonRunResponse,
+  gradeChallenge,
+  startChallenge,
+  type ChallengeGradeResponse,
+  type ChallengeStartResponse,
 } from "../lib/lessonApi";
+import type { Command } from "../lib/types";
+import { connectSessionSocket, type SessionSocket } from "../lib/ws";
+import { initialSessionState, sessionReducer } from "../state/sessionReducer";
 
 interface UseLessonRunnerOptions {
   baseURL: string;
-  onRunResult?: (result: LessonRunResponse) => void;
+  onGradeResult?: (result: ChallengeGradeResponse) => void;
 }
 
-export function useLessonRunner({
-  baseURL,
-  onRunResult,
-}: UseLessonRunnerOptions) {
+export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptions) {
+  const [liveState, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [selectedLessonIDState, setSelectedLessonIDState] = useState("");
   const [selectedStageIndexState, setSelectedStageIndexState] = useState(0);
-  const [runResult, setRunResult] = useState<LessonRunResponse | null>(null);
+  const [runResult, setRunResult] = useState<ChallengeGradeResponse | null>(null);
   const [runError, setRunError] = useState("");
+  const [policy, setPolicy] = useState<"fifo" | "rr" | "mlfq">("rr");
+  const [quantum, setQuantum] = useState(2);
+  const socketRef = useRef<SessionSocket | null>(null);
 
   const lessonsQuery = useQuery({
     queryKey: ["challenges", baseURL],
     queryFn: () => fetchLessons(baseURL),
   });
 
-  const runStageMutation = useMutation({
-    mutationFn: ({
-      lessonID,
-      stageIndex,
-    }: {
-      lessonID: string;
-      stageIndex: number;
-    }) => runLessonStage(baseURL, lessonID, stageIndex),
+  const startChallengeMutation = useMutation({
+    mutationFn: ({ lessonID, stageIndex }: { lessonID: string; stageIndex: number }) =>
+      startChallenge(baseURL, lessonID, stageIndex),
   });
+
+  const gradeChallengeMutation = useMutation({
+    mutationFn: ({ attemptID }: { attemptID: string }) => gradeChallenge(baseURL, attemptID),
+  });
+
+  const [attempt, setAttempt] = useState<ChallengeStartResponse | null>(null);
+
+  useEffect(() => {
+    return () => {
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, []);
 
   const lessons = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
 
@@ -72,6 +86,20 @@ export function useLessonRunner({
     return lessonsQuery.error instanceof Error ? lessonsQuery.error.message : "";
   }, [lessonsQuery.error, runError]);
 
+  const canSend = Boolean(attempt?.session_id) && liveState.connected;
+  const attemptID = attempt?.attempt_id ?? "";
+
+  const allowedCommandSet = useMemo(() => {
+    return new Set(attempt?.allowed_commands ?? []);
+  }, [attempt]);
+
+  const isCommandAllowed = useCallback(
+    (name: Command["name"]) => {
+      return allowedCommandSet.has(name);
+    },
+    [allowedCommandSet],
+  );
+
   const handleLessonChange = useCallback(
     (lessonID: string) => {
       setSelectedLessonIDState(lessonID);
@@ -81,22 +109,72 @@ export function useLessonRunner({
     [lessons],
   );
 
-  const handleRun = useCallback(async () => {
+  const handleStart = useCallback(async () => {
     if (!selectedLessonID) {
+      return;
+    }
+
+    setRunError("");
+    setRunResult(null);
+    dispatch({ type: "session.reset" });
+    socketRef.current?.close();
+    socketRef.current = null;
+
+    try {
+      const started = await startChallengeMutation.mutateAsync({
+        lessonID: selectedLessonID,
+        stageIndex: selectedStageIndex,
+      });
+      setAttempt(started);
+
+      const socket = connectSessionSocket(
+        baseURL,
+        started.session_id,
+        (event) => {
+          dispatch({ type: "event.received", event });
+          dispatch({ type: "socket.connected" });
+        },
+        (error) => {
+          dispatch({ type: "socket.disconnected" });
+          dispatch({ type: "error", message: error.message });
+        },
+      );
+      socketRef.current = socket;
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : "failed to start challenge");
+    }
+  }, [
+    baseURL,
+    selectedLessonID,
+    selectedStageIndex,
+    startChallengeMutation,
+  ]);
+
+  const handleCommand = useCallback(
+    (command: Command) => {
+      if (!canSend || !isCommandAllowed(command.name)) {
+        return;
+      }
+      socketRef.current?.sendCommand(command);
+    },
+    [canSend, isCommandAllowed],
+  );
+
+  const handleGrade = useCallback(async () => {
+    if (attemptID === "") {
       return;
     }
     setRunError("");
     try {
-      const result = await runStageMutation.mutateAsync({
-        lessonID: selectedLessonID,
-        stageIndex: selectedStageIndex,
+      const result = await gradeChallengeMutation.mutateAsync({
+        attemptID,
       });
       setRunResult(result);
-      onRunResult?.(result);
+      onGradeResult?.(result);
     } catch (err) {
-      setRunError(err instanceof Error ? err.message : "failed to run challenge step");
+      setRunError(err instanceof Error ? err.message : "failed to check challenge");
     }
-  }, [onRunResult, runStageMutation, selectedLessonID, selectedStageIndex]);
+  }, [attemptID, gradeChallengeMutation, onGradeResult]);
 
   return {
     lessons,
@@ -104,11 +182,23 @@ export function useLessonRunner({
     selectedLessonID,
     selectedStageIndex,
     runResult,
+    attempt,
+    policy,
+    quantum,
+    snapshot: liveState.snapshot,
+    liveError: liveState.error,
+    canSend,
     errorMessage,
     isLessonsLoading: lessonsQuery.isLoading,
-    isRunPending: runStageMutation.isPending,
+    isStartPending: startChallengeMutation.isPending,
+    isGradePending: gradeChallengeMutation.isPending,
+    setPolicy,
+    setQuantum,
     setSelectedStageIndexState,
     handleLessonChange,
-    handleRun,
+    handleStart,
+    handleCommand,
+    handleGrade,
+    isCommandAllowed,
   };
 }

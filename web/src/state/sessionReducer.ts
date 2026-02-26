@@ -20,6 +20,7 @@ export interface SessionState {
 }
 
 export type SessionAction =
+  | { type: "session.reset" }
   | { type: "session.created"; sessionID: string; snapshot: SnapshotDTO }
   | { type: "socket.connected" }
   | { type: "socket.disconnected" }
@@ -41,6 +42,8 @@ export function sessionReducer(
   action: SessionAction,
 ): SessionState {
   switch (action.type) {
+    case "session.reset":
+      return initialSessionState;
     case "session.created":
       return {
         ...state,

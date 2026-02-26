@@ -39,7 +39,25 @@ export interface LessonRunOutput {
   filesystem_ok: boolean;
 }
 
-export interface LessonRunResponse {
+export interface ChallengeLimits {
+  max_steps?: number;
+  max_policy_changes?: number;
+}
+
+export interface ChallengeStartResponse {
+  attempt_id: string;
+  session_id: string;
+  lesson_id: string;
+  stage_index: number;
+  stage_title: string;
+  module: string;
+  objective: string;
+  allowed_commands: string[];
+  limits: ChallengeLimits;
+}
+
+export interface ChallengeGradeResponse {
+  attempt_id: string;
   lesson_id: string;
   stage_index: number;
   passed: boolean;
@@ -55,14 +73,25 @@ export async function fetchLessons(baseURL: string): Promise<LessonSummary[]> {
   return payload.lessons;
 }
 
-export async function runLessonStage(
+export async function startChallenge(
   baseURL: string,
   lessonID: string,
   stageIndex: number,
-): Promise<LessonRunResponse> {
-  return fetchJSON<LessonRunResponse>(baseURL, "/lessons/run", {
+): Promise<ChallengeStartResponse> {
+  return fetchJSON<ChallengeStartResponse>(baseURL, "/challenges/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ lesson_id: lessonID, stage_index: stageIndex }),
+  });
+}
+
+export async function gradeChallenge(
+  baseURL: string,
+  attemptID: string,
+): Promise<ChallengeGradeResponse> {
+  return fetchJSON<ChallengeGradeResponse>(baseURL, "/challenges/grade", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ attempt_id: attemptID }),
   });
 }

@@ -30,7 +30,7 @@ pnpm --dir=web run dev
 Web routes:
 
 - `/sandbox`: free deterministic simulation controls
-- `/challenge`: focused challenge steps with deterministic grading and hints
+- `/challenge`: command-driven challenge attempts with deterministic grading and hints
 
 ## Tooling Baseline
 

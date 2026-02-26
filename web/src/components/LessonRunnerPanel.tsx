@@ -1,14 +1,19 @@
+import { useEffect } from "react";
+
 import { useLessonRunner } from "../hooks/useLessonRunner";
-import type { LessonRunResponse } from "../lib/lessonApi";
+import type { ChallengeGradeResponse } from "../lib/lessonApi";
+import type { SnapshotDTO } from "../lib/types";
 
 interface LessonRunnerPanelProps {
   baseURL: string;
-  onRunResult?: (result: LessonRunResponse) => void;
+  onGradeResult?: (result: ChallengeGradeResponse) => void;
+  onLiveSnapshot?: (snapshot: SnapshotDTO | null, title: string) => void;
 }
 
 export function LessonRunnerPanel({
   baseURL,
-  onRunResult,
+  onGradeResult,
+  onLiveSnapshot,
 }: LessonRunnerPanelProps) {
   const {
     lessons,
@@ -16,13 +21,36 @@ export function LessonRunnerPanel({
     selectedLessonID,
     selectedStageIndex,
     runResult,
+    attempt,
+    policy,
+    quantum,
+    snapshot,
+    liveError,
+    canSend,
     errorMessage,
     isLessonsLoading,
-    isRunPending,
+    isStartPending,
+    isGradePending,
+    setPolicy,
+    setQuantum,
     setSelectedStageIndexState,
     handleLessonChange,
-    handleRun,
-  } = useLessonRunner({ baseURL, onRunResult });
+    handleStart,
+    handleCommand,
+    handleGrade,
+    isCommandAllowed,
+  } = useLessonRunner({ baseURL, onGradeResult });
+
+  useEffect(() => {
+    if (!onLiveSnapshot) {
+      return;
+    }
+    if (attempt) {
+      onLiveSnapshot(snapshot, `${attempt.lesson_id} step ${attempt.stage_index + 1}`);
+      return;
+    }
+    onLiveSnapshot(null, "");
+  }, [attempt, onLiveSnapshot, snapshot]);
 
   return (
     <section className="panel lesson-panel">
@@ -32,7 +60,7 @@ export function LessonRunnerPanel({
           Challenge
           <select
             value={selectedLessonID}
-            disabled={isLessonsLoading || lessons.length === 0}
+            disabled={isLessonsLoading || lessons.length === 0 || isStartPending}
             onChange={(event) => handleLessonChange(event.target.value)}
           >
             {lessons.map((lesson) => (
@@ -47,10 +75,8 @@ export function LessonRunnerPanel({
           Step
           <select
             value={selectedStageIndex}
-            disabled={!selectedLesson}
-            onChange={(event) =>
-              setSelectedStageIndexState(Number(event.target.value))
-            }
+            disabled={!selectedLesson || isStartPending}
+            onChange={(event) => setSelectedStageIndexState(Number(event.target.value))}
           >
             {(selectedLesson?.stages ?? []).map((stage) => (
               <option key={stage.id} value={stage.index}>
@@ -60,16 +86,123 @@ export function LessonRunnerPanel({
           </select>
         </label>
 
+        <button type="button" disabled={isStartPending || !selectedLessonID} onClick={handleStart}>
+          {isStartPending ? "Starting..." : "Start Challenge"}
+        </button>
         <button
           type="button"
-          disabled={isRunPending || !selectedLessonID}
-          onClick={handleRun}
+          disabled={isGradePending || !attempt?.attempt_id}
+          onClick={handleGrade}
         >
-          {isRunPending ? "Running..." : "Run Step"}
+          {isGradePending ? "Checking..." : "Check"}
         </button>
       </div>
 
+      {attempt ? (
+        <div className="lesson-summary">
+          <span>attempt: {attempt.attempt_id}</span>
+          <span>session: {attempt.session_id}</span>
+          <span>objective: {attempt.objective}</span>
+          <span>limits: steps {attempt.limits.max_steps ?? 0}</span>
+          <span>policy edits: {attempt.limits.max_policy_changes ?? 0}</span>
+        </div>
+      ) : (
+        <p className="empty">
+          Pick a challenge and start it. Then interact with the simulator and click Check.
+        </p>
+      )}
+
+      {attempt ? (
+        <>
+          <div className="control-row">
+            <button
+              type="button"
+              disabled={!canSend || !isCommandAllowed("run")}
+              onClick={() => handleCommand({ name: "run", count: 8 })}
+            >
+              Run 8
+            </button>
+            <button
+              type="button"
+              disabled={!canSend || !isCommandAllowed("step")}
+              onClick={() => handleCommand({ name: "step", count: 1 })}
+            >
+              Step
+            </button>
+            <button
+              type="button"
+              disabled={!canSend || !isCommandAllowed("pause")}
+              onClick={() => handleCommand({ name: "pause" })}
+            >
+              Pause
+            </button>
+            <button
+              type="button"
+              disabled={!canSend || !isCommandAllowed("reset")}
+              onClick={() => handleCommand({ name: "reset" })}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              disabled={!canSend || !isCommandAllowed("spawn")}
+              onClick={() =>
+                handleCommand({
+                  name: "spawn",
+                  process: "demo",
+                  program: "COMPUTE 5; SYSCALL sleep 2; COMPUTE 3; EXIT",
+                })
+              }
+            >
+              Spawn Demo
+            </button>
+          </div>
+
+          <div className="control-row">
+            <label>
+              Policy
+              <select
+                value={policy}
+                disabled={!canSend || !isCommandAllowed("policy")}
+                onChange={(event) =>
+                  setPolicy(event.target.value as "fifo" | "rr" | "mlfq")
+                }
+              >
+                <option value="fifo">FIFO</option>
+                <option value="rr">RR</option>
+                <option value="mlfq">MLFQ</option>
+              </select>
+            </label>
+            <label>
+              Quantum
+              <input
+                type="number"
+                min={1}
+                max={16}
+                value={quantum}
+                disabled={!canSend || !isCommandAllowed("policy") || policy !== "rr"}
+                onChange={(event) => setQuantum(Number(event.target.value))}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={!canSend || !isCommandAllowed("policy")}
+              onClick={() =>
+                handleCommand({
+                  name: "policy",
+                  policy,
+                  quantum: policy === "rr" ? quantum : 0,
+                })
+              }
+            >
+              Apply Policy
+            </button>
+          </div>
+        </>
+      ) : null}
+
       {errorMessage ? <p className="error">{errorMessage}</p> : null}
+      {liveError ? <p className="error">{liveError}</p> : null}
 
       {runResult ? (
         <>
@@ -94,11 +227,7 @@ export function LessonRunnerPanel({
             {formatPercent(runResult.analytics.completion_rate)})
           </p>
         </>
-      ) : (
-        <p className="empty">
-          Pick a challenge and run a step to get grading feedback and hints.
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }

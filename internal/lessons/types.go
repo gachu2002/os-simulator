@@ -26,12 +26,21 @@ type HintSet struct {
 	Explicit string
 }
 
+type ChallengeLimits struct {
+	MaxSteps         int
+	MaxPolicyChanges int
+}
+
 type Stage struct {
 	ID            string
 	Title         string
+	Objective     string
 	Prerequisites []string
 	Config        SimConfig
 	Commands      []sim.Command
+	Bootstrap     []sim.Command
+	AllowedCmds   []string
+	Limits        ChallengeLimits
 	Validators    []ValidatorSpec
 	Hints         HintSet
 }
@@ -41,6 +50,14 @@ type Lesson struct {
 	Title  string
 	Module string
 	Stages []Stage
+}
+
+type PreparedStage struct {
+	LessonID    string
+	LessonTitle string
+	Module      string
+	StageIndex  int
+	Stage       Stage
 }
 
 type StageOutput struct {

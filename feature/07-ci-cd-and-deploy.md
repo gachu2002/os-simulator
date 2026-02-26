@@ -8,7 +8,7 @@ flowchart LR
   CI --> GO[Go tests + deterministic suite + build]
   CI --> WEB[web lint + typecheck + vitest + build]
   MAIN[Push main] --> SMOKE[deploy-smoke.yml]
-  SMOKE --> API[/healthz /lessons /lessons/run]
+  SMOKE --> API[/healthz /lessons /challenges/start /challenges/grade]
   SMOKE --> UI[/ frontend availability]
 ```
 

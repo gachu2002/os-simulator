@@ -74,6 +74,47 @@ func TestPrerequisiteGateBlocksOutOfOrderStage(t *testing.T) {
 	}
 }
 
+func TestPrepareStageReturnsLessonAndStageMetadata(t *testing.T) {
+	e := NewEngine()
+	prepared, err := e.PrepareStage("l01-sched-rr-basics", 0)
+	if err != nil {
+		t.Fatalf("prepare stage failed: %v", err)
+	}
+	if prepared.LessonID != "l01-sched-rr-basics" {
+		t.Fatalf("lesson id=%q want=%q", prepared.LessonID, "l01-sched-rr-basics")
+	}
+	if prepared.Module != "cpu-virtualization" {
+		t.Fatalf("module=%q want=%q", prepared.Module, "cpu-virtualization")
+	}
+	if prepared.Stage.ID != "s1" {
+		t.Fatalf("stage id=%q want=%q", prepared.Stage.ID, "s1")
+	}
+	if prepared.Stage.Objective == "" {
+		t.Fatalf("expected stage objective")
+	}
+	if len(prepared.Stage.AllowedCmds) == 0 {
+		t.Fatalf("expected allowed challenge commands")
+	}
+	for _, cmd := range prepared.Stage.AllowedCmds {
+		if cmd == "spawn" {
+			t.Fatalf("spawn should be provided via bootstrap, not interactive controls")
+		}
+	}
+	if prepared.Stage.Limits.MaxSteps <= 0 {
+		t.Fatalf("expected challenge max steps")
+	}
+	if len(prepared.Stage.Bootstrap) == 0 {
+		t.Fatalf("expected bootstrap commands for challenge stage")
+	}
+}
+
+func TestPrepareStageRespectsPrerequisites(t *testing.T) {
+	e := NewEngine()
+	if _, err := e.PrepareStage("l07-vm-fault-sequence", 0); err == nil {
+		t.Fatalf("expected prerequisite failure for prepare stage")
+	}
+}
+
 func runLessonPath(e *Engine, lessonID string) error {
 	for idx := 0; idx < 3; idx++ {
 		res, err := e.RunStage(lessonID, idx)

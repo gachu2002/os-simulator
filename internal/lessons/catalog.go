@@ -69,6 +69,10 @@ func DefaultCatalog() map[string]Lesson {
 	}
 	appendPersistenceLessons(&lessons, persistenceSpecs, "l15-mixed-blocking:s3")
 
+	for idx := range lessons {
+		applyChallengeMetadata(&lessons[idx])
+	}
+
 	out := make(map[string]Lesson, len(lessons))
 	for _, lesson := range lessons {
 		out[lesson.ID] = lesson
@@ -353,4 +357,113 @@ func prereqList(prereq string) []string {
 		return nil
 	}
 	return []string{prereq}
+}
+
+func applyChallengeMetadata(lesson *Lesson) {
+	for idx := range lesson.Stages {
+		stage := &lesson.Stages[idx]
+		if stage.Objective == "" {
+			stage.Objective = defaultObjectiveForStage(lesson.Module, stage.ID)
+		}
+		if len(stage.Bootstrap) == 0 {
+			stage.Bootstrap = defaultBootstrapCommands(stage.Commands)
+		}
+		if len(stage.AllowedCmds) == 0 {
+			stage.AllowedCmds = defaultAllowedCommandsForStage(lesson.Module, stage.ID)
+		}
+		if stage.Limits.MaxSteps <= 0 {
+			stage.Limits.MaxSteps = defaultMaxStepsForStage(lesson.Module, stage.Commands)
+		}
+		if stage.Limits.MaxPolicyChanges <= 0 {
+			if allowsPolicy(stage.AllowedCmds) && stage.ID == "s3" {
+				stage.Limits.MaxPolicyChanges = 3
+			} else if allowsPolicy(stage.AllowedCmds) {
+				stage.Limits.MaxPolicyChanges = 1
+			} else {
+				stage.Limits.MaxPolicyChanges = 0
+			}
+		}
+	}
+}
+
+func defaultAllowedCommandsForStage(module, stageID string) []string {
+	switch module {
+	case "cpu-virtualization":
+		if stageID == "s3" {
+			return []string{"step", "run", "pause", "policy", "reset"}
+		}
+		return []string{"step", "run", "pause", "reset"}
+	default:
+		return []string{"step", "run", "pause", "reset"}
+	}
+}
+
+func defaultMaxStepsForStage(module string, commands []sim.Command) int {
+	planned := 0
+	for _, cmd := range commands {
+		switch cmd.Name {
+		case "step", "run":
+			planned += cmd.Count
+		}
+	}
+	if planned == 0 {
+		switch module {
+		case "memory", "concurrency", "persistence":
+			return 24
+		default:
+			return 28
+		}
+	}
+	if planned+4 < 8 {
+		return 8
+	}
+	return planned + 4
+}
+
+func defaultBootstrapCommands(commands []sim.Command) []sim.Command {
+	out := make([]sim.Command, 0, len(commands))
+	for _, cmd := range commands {
+		switch cmd.Name {
+		case "spawn", "policy":
+			out = append(out, cmd)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func defaultObjectiveForStage(module, stageID string) string {
+	prefix := "Run the challenge"
+	switch module {
+	case "cpu-virtualization":
+		prefix = "Run the scheduler workload"
+	case "memory":
+		prefix = "Run the memory workload"
+	case "concurrency":
+		prefix = "Run the blocking/IRQ workload"
+	case "persistence":
+		prefix = "Run the filesystem workload"
+	}
+
+	suffix := "and satisfy all stage checks."
+	switch stageID {
+	case "s1":
+		suffix = "until the expected trace events appear."
+	case "s2":
+		suffix = "and verify the required outcome metrics."
+	case "s3":
+		suffix = "and apply tuning within limits before checking."
+	}
+	return prefix + " " + suffix
+}
+
+func allowsPolicy(allowed []string) bool {
+	for _, cmd := range allowed {
+		if cmd == "policy" {
+			return true
+		}
+	}
+	return false
 }

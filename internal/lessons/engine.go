@@ -76,36 +76,56 @@ func (e *Engine) Lessons() []Lesson {
 }
 
 func (e *Engine) RunStage(lessonID string, stageIndex int) (StageResult, error) {
-	lesson, ok := e.catalog[lessonID]
-	if !ok {
-		return StageResult{}, fmt.Errorf("lesson %q not found", lessonID)
-	}
-	if stageIndex < 0 || stageIndex >= len(lesson.Stages) {
-		return StageResult{}, fmt.Errorf("invalid stage index %d", stageIndex)
-	}
-	stage := lesson.Stages[stageIndex]
-	for _, prereq := range stage.Prerequisites {
-		if !e.isPrerequisiteCompleted(prereq) {
-			return StageResult{}, fmt.Errorf("prerequisite %q not completed", prereq)
-		}
-	}
-
-	output, err := executeStage(stage)
+	prepared, err := e.PrepareStage(lessonID, stageIndex)
 	if err != nil {
 		return StageResult{}, err
 	}
 
-	for _, v := range stage.Validators {
-		ok, _ := validate(output, v)
-		if !ok {
-			prog := e.progress.Record(lesson.ID, stage.ID, false)
-			hintLevel, hint := hintForAttempt(stage.Hints, prog.Attempts)
-			return StageResult{Passed: false, FeedbackKey: "validator." + v.Name, Hint: hint, HintLevel: hintLevel, Output: output}, nil
+	output, err := executeStage(prepared.Stage)
+	if err != nil {
+		return StageResult{}, err
+	}
+
+	return e.GradeStage(prepared, output), nil
+}
+
+func (e *Engine) PrepareStage(lessonID string, stageIndex int) (PreparedStage, error) {
+	lesson, ok := e.catalog[lessonID]
+	if !ok {
+		return PreparedStage{}, fmt.Errorf("lesson %q not found", lessonID)
+	}
+	if stageIndex < 0 || stageIndex >= len(lesson.Stages) {
+		return PreparedStage{}, fmt.Errorf("invalid stage index %d", stageIndex)
+	}
+	stage := lesson.Stages[stageIndex]
+	for _, prereq := range stage.Prerequisites {
+		if !e.isPrerequisiteCompleted(prereq) {
+			return PreparedStage{}, fmt.Errorf("prerequisite %q not completed", prereq)
 		}
 	}
 
-	e.progress.Record(lesson.ID, stage.ID, true)
-	return StageResult{Passed: true, FeedbackKey: "stage." + stage.ID + ".passed", Output: output}, nil
+	return PreparedStage{
+		LessonID:    lesson.ID,
+		LessonTitle: lesson.Title,
+		Module:      lesson.Module,
+		StageIndex:  stageIndex,
+		Stage:       stage,
+	}, nil
+}
+
+func (e *Engine) GradeStage(prepared PreparedStage, output StageOutput) StageResult {
+	stage := prepared.Stage
+	for _, v := range stage.Validators {
+		ok, _ := validate(output, v)
+		if !ok {
+			prog := e.progress.Record(prepared.LessonID, stage.ID, false)
+			hintLevel, hint := hintForAttempt(stage.Hints, prog.Attempts)
+			return StageResult{Passed: false, FeedbackKey: "validator." + v.Name, Hint: hint, HintLevel: hintLevel, Output: output}
+		}
+	}
+
+	e.progress.Record(prepared.LessonID, stage.ID, true)
+	return StageResult{Passed: true, FeedbackKey: "stage." + stage.ID + ".passed", Output: output}
 }
 
 func (e *Engine) isPrerequisiteCompleted(key string) bool {

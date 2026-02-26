@@ -59,7 +59,7 @@ It verifies (via `cmd/smokecheck`):
 
 - backend health endpoint: `GET /healthz`
 - backend lesson list: `GET /lessons`
-- backend lesson run: `POST /lessons/run`
+- backend challenge start/grade: `POST /challenges/start` and `POST /challenges/grade`
 - backend realtime command path: WebSocket connect + `step` command
 - frontend availability: `GET /`
 

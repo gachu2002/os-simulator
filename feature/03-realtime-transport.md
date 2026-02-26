@@ -6,7 +6,8 @@ HTTP + WebSocket transport over deterministic simulator sessions.
 flowchart LR
   FE[Frontend] -->|POST /sessions| API[cmd/server]
   FE -->|GET /lessons| API
-  FE -->|POST /lessons/run| API
+  FE -->|POST /challenges/start| API
+  FE -->|POST /challenges/grade| API
   FE <-->|WS /ws/{sessionID}| API
   API --> SM[SessionManager]
   SM --> ENG[sim.Engine]

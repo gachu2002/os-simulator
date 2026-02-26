@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"os-simulator-plan/internal/lessons"
 	"os-simulator-plan/internal/sim"
 )
 
@@ -46,6 +47,7 @@ type Session struct {
 	mu      sync.Mutex
 	engine  *sim.Engine
 	cfg     SessionConfig
+	policy  *ChallengeCommandPolicy
 	nextSeq uint64
 }
 
@@ -75,7 +77,32 @@ func (s *Session) EmitError(message string) Event {
 	return s.errorEventLocked(fmt.Errorf("%s", message))
 }
 
+func (s *Session) SetChallengePolicy(policy ChallengeCommandPolicy) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	copyPolicy := policy.Clone()
+	s.policy = &copyPolicy
+}
+
+func (s *Session) StageOutput() lessons.StageOutput {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return lessons.StageOutput{
+		Trace:        s.engine.Trace(),
+		Processes:    s.engine.ProcessTable(),
+		Metrics:      s.engine.SchedulingMetrics(),
+		Memory:       s.engine.MemoryView(),
+		FilesystemOK: s.engine.ValidateFilesystem() == nil,
+	}
+}
+
 func (s *Session) applyLocked(cmd Command) error {
+	if s.policy != nil {
+		if err := s.policy.Validate(cmd); err != nil {
+			return err
+		}
+	}
+
 	simCmd := sim.Command{Name: cmd.Name, Count: cmd.Count, Process: cmd.Process, Program: cmd.Program, Policy: cmd.Policy, Quantum: cmd.Quantum}
 	switch cmd.Name {
 	case "spawn":

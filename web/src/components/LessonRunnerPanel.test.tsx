@@ -6,12 +6,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LessonRunnerPanel } from "./LessonRunnerPanel";
 
+vi.mock("../lib/ws", () => {
+  return {
+    connectSessionSocket: vi.fn(() => ({
+      sendCommand: vi.fn(),
+      close: vi.fn(),
+    })),
+  };
+});
+
 describe("LessonRunnerPanel", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("loads lessons and runs selected stage", async () => {
+  it("starts and grades a challenge attempt", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
@@ -34,10 +43,26 @@ describe("LessonRunnerPanel", () => {
       )
       .mockResolvedValueOnce(
         jsonResponse({
+          attempt_id: "a-000001",
+          session_id: "s-000001",
           lesson_id: "l01",
           stage_index: 0,
-          passed: true,
-          feedback_key: "stage.s1.passed",
+          stage_title: "Observe scheduler behavior",
+          module: "cpu",
+          objective: "Observe scheduler behavior",
+          allowed_commands: ["step", "run", "reset", "pause", "spawn", "policy"],
+          limits: { max_steps: 40, max_policy_changes: 3 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          attempt_id: "a-000001",
+          lesson_id: "l01",
+          stage_index: 0,
+          passed: false,
+          feedback_key: "validator.completed",
+          hint: "Try stepping until completion.",
+          hint_level: 1,
           output: {
             tick: 20,
             trace_hash: "abc",
@@ -46,7 +71,7 @@ describe("LessonRunnerPanel", () => {
             metrics: {
               policy: "rr",
               total_ticks: 20,
-              completed_processes: 2,
+              completed_processes: 1,
               avg_response_time: 1,
               avg_turnaround_time: 4,
               throughput_per_100_ticks: 10,
@@ -84,15 +109,22 @@ describe("LessonRunnerPanel", () => {
       expect(screen.getByText("cpu - CPU Basics")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Run Step" }));
+    await user.click(screen.getByRole("button", { name: "Start Challenge" }));
 
     await waitFor(() => {
-      expect(screen.getByText("passed")).toBeInTheDocument();
-      expect(screen.getByText("result: stage.s1.passed")).toBeInTheDocument();
+      expect(screen.getByText("objective: Observe scheduler behavior")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Check" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("failed")).toBeInTheDocument();
+      expect(screen.getByText("result: validator.completed")).toBeInTheDocument();
+      expect(screen.getByText("Hint L1: Try stepping until completion.")).toBeInTheDocument();
       expect(screen.getByText("Completed steps: 1/20 (5%)")).toBeInTheDocument();
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
 

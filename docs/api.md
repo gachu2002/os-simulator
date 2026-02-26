@@ -5,7 +5,8 @@
 - `GET /healthz`
 - `POST /sessions`
 - `GET /lessons`
-- `POST /lessons/run`
+- `POST /challenges/start`
+- `POST /challenges/grade`
 - `WS /ws/{sessionID}`
 
 ## Request/Response Notes
@@ -42,9 +43,9 @@ Response: `201` with initial snapshot payload.
 
 Returns lesson summaries with lightweight stage metadata (`index`, `id`, `title`). Default catalog currently ships 20 lessons with 3 stages each.
 
-## Lesson Run
+## Challenge Start
 
-### `POST /lessons/run`
+### `POST /challenges/start`
 
 Body:
 
@@ -55,7 +56,21 @@ Body:
 }
 ```
 
-Returns grading result, hint info, output snapshot fields, and completion analytics.
+Returns challenge attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits).
+
+## Challenge Grade
+
+### `POST /challenges/grade`
+
+Body:
+
+```json
+{
+  "attempt_id": "a-000001"
+}
+```
+
+Grades the current challenge session state and returns pass/fail, hint progression fields, output snapshot fields, and completion analytics.
 
 ## WebSocket Stream
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ControlBar } from "./components/ControlBar";
 import { EventLog } from "./components/EventLog";
@@ -6,8 +6,9 @@ import { LessonRunnerPanel } from "./components/LessonRunnerPanel";
 import { StatusCards } from "./components/StatusCards";
 import { VisualizationSuite } from "./components/VisualizationSuite";
 import { useSession } from "./hooks/useSession";
-import type { LessonRunResponse } from "./lib/lessonApi";
-import { snapshotFromLessonRun } from "./state/lessonSnapshot";
+import type { ChallengeGradeResponse } from "./lib/lessonApi";
+import type { SnapshotDTO } from "./lib/types";
+import { snapshotFromChallengeGrade } from "./state/lessonSnapshot";
 
 type AppMode = "sandbox" | "challenge";
 
@@ -58,10 +59,9 @@ export function App() {
     handleCreateSession,
     handleCommand,
   } = useSession();
-  const [lessonSnapshot, setLessonSnapshot] = useState<ReturnType<
-    typeof snapshotFromLessonRun
-  > | null>(null);
+  const [lessonSnapshot, setLessonSnapshot] = useState<SnapshotDTO | null>(null);
   const [lessonTitle, setLessonTitle] = useState("");
+  const [hasGradedAttempt, setHasGradedAttempt] = useState(false);
   const [mode, setMode] = useState<AppMode>(() =>
     normalizeMode(window.location.pathname),
   );
@@ -85,10 +85,17 @@ export function App() {
     setMode(nextMode);
   }
 
-  function handleLessonRunResult(result: LessonRunResponse) {
-    setLessonSnapshot(snapshotFromLessonRun(result));
+  const handleChallengeLiveSnapshot = useCallback((snapshot: SnapshotDTO | null, title: string) => {
+    setLessonSnapshot(snapshot);
+    setLessonTitle(title);
+    setHasGradedAttempt(false);
+  }, []);
+
+  const handleChallengeGradeResult = useCallback((result: ChallengeGradeResponse) => {
+    setLessonSnapshot(snapshotFromChallengeGrade(result));
     setLessonTitle(`${result.lesson_id} step ${result.stage_index + 1}`);
-  }
+    setHasGradedAttempt(true);
+  }, []);
 
   return (
     <main className="app-shell">
@@ -181,7 +188,7 @@ export function App() {
               <input
                 value={baseURL}
                 onChange={(event) => setBaseURL(event.target.value)}
-                placeholder="http://127.0.0.1:5173"
+                placeholder="http://127.0.0.1:8080"
               />
             </label>
             <p className="challenge-note">
@@ -192,15 +199,18 @@ export function App() {
 
           <LessonRunnerPanel
             baseURL={baseURL}
-            onRunResult={handleLessonRunResult}
+            onLiveSnapshot={handleChallengeLiveSnapshot}
+            onGradeResult={handleChallengeGradeResult}
           />
 
           <VisualizationSuite
             title="Challenge Step Snapshot"
             subtitle={
               lessonSnapshot
-                ? `Latest challenge result: ${lessonTitle}`
-                : "Run a challenge step to render scheduler, memory, and process views"
+                ? hasGradedAttempt
+                  ? `Latest graded result: ${lessonTitle}`
+                  : `Live challenge attempt: ${lessonTitle}`
+                : "Start a challenge to render scheduler, memory, and process views"
             }
             snapshot={lessonSnapshot}
           />

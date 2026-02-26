@@ -12,11 +12,12 @@ import (
 )
 
 type Server struct {
-	manager      *SessionManager
-	lessonMu     sync.Mutex
-	lessonEngine *lessons.Engine
-	upgrader     websocket.Upgrader
-	origins      map[string]struct{}
+	manager           *SessionManager
+	challengeAttempts *ChallengeAttemptStore
+	lessonMu          sync.Mutex
+	lessonEngine      *lessons.Engine
+	upgrader          websocket.Upgrader
+	origins           map[string]struct{}
 }
 
 func NewServer(manager *SessionManager) *Server {
@@ -26,9 +27,10 @@ func NewServer(manager *SessionManager) *Server {
 func NewServerWithLessons(manager *SessionManager, lessonEngine *lessons.Engine) *Server {
 	origins := allowedOriginsFromEnv(os.Getenv("CORS_ALLOW_ORIGIN"))
 	return &Server{
-		manager:      manager,
-		lessonEngine: lessonEngine,
-		origins:      origins,
+		manager:           manager,
+		challengeAttempts: NewChallengeAttemptStore(),
+		lessonEngine:      lessonEngine,
+		origins:           origins,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
@@ -44,7 +46,8 @@ func (s *Server) Handler() http.Handler {
 	router.HandleFunc("/healthz", s.handleHealth)
 	router.HandleFunc("/sessions", s.handleSessions)
 	router.HandleFunc("/lessons", s.handleLessons)
-	router.HandleFunc("/lessons/run", s.handleLessonRun)
+	router.HandleFunc("/challenges/start", s.handleChallengeStart)
+	router.HandleFunc("/challenges/grade", s.handleChallengeGrade)
 	router.HandleFunc("/ws/{id}", s.handleWS)
 	return withRequestID(withCORS(s.origins, router))
 }
