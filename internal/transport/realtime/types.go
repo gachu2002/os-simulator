@@ -44,12 +44,16 @@ func (c SessionConfig) withDefaults() SessionConfig {
 }
 
 type Command struct {
-	Name    string `json:"name"`
-	Count   int    `json:"count,omitempty"`
-	Process string `json:"process,omitempty"`
-	Program string `json:"program,omitempty"`
-	Policy  string `json:"policy,omitempty"`
-	Quantum int    `json:"quantum,omitempty"`
+	Name            string   `json:"name"`
+	Count           int      `json:"count,omitempty"`
+	Process         string   `json:"process,omitempty"`
+	Program         string   `json:"program,omitempty"`
+	Policy          string   `json:"policy,omitempty"`
+	Quantum         int      `json:"quantum,omitempty"`
+	Frames          int      `json:"frames,omitempty"`
+	TLBEntries      int      `json:"tlb_entries,omitempty"`
+	DiskLatency     sim.Tick `json:"disk_latency,omitempty"`
+	TerminalLatency sim.Tick `json:"terminal_latency,omitempty"`
 }
 
 type CommandEnvelope struct {
@@ -73,10 +77,13 @@ type SnapshotDTO struct {
 type ChallengeStateDTO struct {
 	MaxSteps           int `json:"max_steps,omitempty"`
 	MaxPolicyChanges   int `json:"max_policy_changes,omitempty"`
+	MaxConfigChanges   int `json:"max_config_changes,omitempty"`
 	UsedSteps          int `json:"used_steps,omitempty"`
 	UsedPolicyChanges  int `json:"used_policy_changes,omitempty"`
+	UsedConfigChanges  int `json:"used_config_changes,omitempty"`
 	RemainingSteps     int `json:"remaining_steps,omitempty"`
 	RemainingPolicyOps int `json:"remaining_policy_changes,omitempty"`
+	RemainingConfigOps int `json:"remaining_config_changes,omitempty"`
 }
 
 type Event struct {

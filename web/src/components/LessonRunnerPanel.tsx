@@ -8,14 +8,22 @@ interface LessonRunnerPanelProps {
   baseURL: string;
   onGradeResult?: (result: ChallengeGradeResponse) => void;
   onLiveSnapshot?: (snapshot: SnapshotDTO | null, title: string) => void;
+  preferredLessonID?: string;
+  preferredStageIndex?: number;
 }
 
 export function LessonRunnerPanel({
   baseURL,
   onGradeResult,
   onLiveSnapshot,
+  preferredLessonID,
+  preferredStageIndex,
 }: LessonRunnerPanelProps) {
   const [viewMode, setViewMode] = useState<"learn" | "exercise">("learn");
+  const [frames, setFrames] = useState(8);
+  const [tlbEntries, setTLBEntries] = useState(4);
+  const [diskLatency, setDiskLatency] = useState(3);
+  const [terminalLatency, setTerminalLatency] = useState(1);
   const {
     lessons,
     selectedLesson,
@@ -41,7 +49,12 @@ export function LessonRunnerPanel({
     handleCommand,
     handleGrade,
     isCommandAllowed,
-  } = useLessonRunner({ baseURL, onGradeResult });
+  } = useLessonRunner({
+    baseURL,
+    onGradeResult,
+    preferredLessonID,
+    preferredStageIndex,
+  });
 
   const challengeState = snapshot?.challenge;
   const remainingSteps =
@@ -49,6 +62,10 @@ export function LessonRunnerPanel({
   const remainingPolicyChanges =
     challengeState?.remaining_policy_changes ??
     attempt?.limits.max_policy_changes ??
+    0;
+  const remainingConfigChanges =
+    challengeState?.remaining_config_changes ??
+    attempt?.limits.max_config_changes ??
     0;
 
   useEffect(() => {
@@ -139,8 +156,10 @@ export function LessonRunnerPanel({
           <span>objective: {attempt.objective}</span>
           <span>limits: steps {attempt.limits.max_steps ?? 0}</span>
           <span>policy edits: {attempt.limits.max_policy_changes ?? 0}</span>
+          <span>config edits: {attempt.limits.max_config_changes ?? 0}</span>
           <span>steps left: {remainingSteps}</span>
           <span>policy edits left: {remainingPolicyChanges}</span>
+          <span>config edits left: {remainingConfigChanges}</span>
         </div>
       ) : (
         <p className="empty">
@@ -161,13 +180,19 @@ export function LessonRunnerPanel({
         <section className="lesson-learn-block" role="tabpanel">
           <h3>Theory</h3>
           <p className="lesson-outcome">
-            {selectedStage.theory ??
+            {selectedStage.theory_detail ??
+              selectedStage.theory ??
               "Study trace order and outcome metrics before running the exercise."}
           </p>
-          <h3>What You Need To Achieve</h3>
-          <p className="lesson-outcome">{selectedStage.objective ?? selectedStage.title}</p>
+
+          <h3>Goal and Result To Achieve</h3>
+          <p className="lesson-outcome">
+            {selectedStage.goal ?? selectedStage.objective ?? selectedStage.title}
+          </p>
+
           {(selectedStage.pass_conditions ?? []).length ? (
             <div className="lesson-validator-results">
+              <h3>Pass Conditions</h3>
               {(selectedStage.pass_conditions ?? []).map((item) => (
                 <p key={item} className="lesson-outcome">
                   - {item}
@@ -175,11 +200,35 @@ export function LessonRunnerPanel({
               ))}
             </div>
           ) : null}
+
+          {(selectedStage.action_descriptions ?? []).length ? (
+            <div className="lesson-validator-results">
+              <h3>Actions You Can Do</h3>
+              {(selectedStage.action_descriptions ?? []).map((item) => (
+                <p key={item.command} className="lesson-outcome">
+                  - {item.command}: {item.description}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="lesson-outcome">
+              Allowed actions: {(selectedStage.allowed_commands ?? []).join(", ") || "step, run, pause, reset"}
+            </p>
+          )}
+
+          {(selectedStage.expected_visual_cues ?? []).length ? (
+            <div className="lesson-validator-results">
+              <h3>Expected Visual Result</h3>
+              {(selectedStage.expected_visual_cues ?? []).map((item) => (
+                <p key={item} className="lesson-outcome">
+                  - {item}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
           <p className="lesson-outcome">
-            Allowed actions: {(selectedStage.allowed_commands ?? []).join(", ") || "step, run, pause, reset"}
-          </p>
-          <p className="lesson-outcome">
-            Limits: steps {selectedStage.limits?.max_steps ?? 0}, policy edits {selectedStage.limits?.max_policy_changes ?? 0}
+            Limits: steps {selectedStage.limits?.max_steps ?? 0}, policy edits {selectedStage.limits?.max_policy_changes ?? 0}, config edits {selectedStage.limits?.max_config_changes ?? 0}
           </p>
           <p className="challenge-note">
             Move to Exercise when ready, run actions, then click Check to validate against deterministic rules.
@@ -189,6 +238,9 @@ export function LessonRunnerPanel({
 
       {viewMode === "exercise" && attempt ? (
         <>
+          <p className="lesson-outcome">
+            Goal: {selectedStage?.goal ?? selectedStage?.objective ?? selectedStage?.title ?? "Run actions and pass checks."}
+          </p>
           <div className="control-row">
             <button
               type="button"
@@ -262,6 +314,115 @@ export function LessonRunnerPanel({
               </button>
             </div>
           ) : null}
+
+          {isCommandAllowed("set_frames") || isCommandAllowed("set_tlb_entries") ? (
+            <div className="control-row">
+              {isCommandAllowed("set_frames") ? (
+                <>
+                  <label>
+                    Frames
+                    <input
+                      type="number"
+                      min={1}
+                      max={64}
+                      value={frames}
+                      disabled={!canSend || !isCommandAllowed("set_frames")}
+                      onChange={(event) => setFrames(Number(event.target.value))}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!canSend || !isCommandAllowed("set_frames")}
+                    onClick={() => handleCommand({ name: "set_frames", frames })}
+                  >
+                    Apply Frames
+                  </button>
+                </>
+              ) : null}
+
+              {isCommandAllowed("set_tlb_entries") ? (
+                <>
+                  <label>
+                    TLB entries
+                    <input
+                      type="number"
+                      min={1}
+                      max={64}
+                      value={tlbEntries}
+                      disabled={!canSend || !isCommandAllowed("set_tlb_entries")}
+                      onChange={(event) => setTLBEntries(Number(event.target.value))}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!canSend || !isCommandAllowed("set_tlb_entries")}
+                    onClick={() =>
+                      handleCommand({ name: "set_tlb_entries", tlb_entries: tlbEntries })
+                    }
+                  >
+                    Apply TLB
+                  </button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
+          {isCommandAllowed("set_disk_latency") || isCommandAllowed("set_terminal_latency") ? (
+            <div className="control-row">
+              {isCommandAllowed("set_disk_latency") ? (
+                <>
+                  <label>
+                    Disk latency
+                    <input
+                      type="number"
+                      min={1}
+                      max={64}
+                      value={diskLatency}
+                      disabled={!canSend || !isCommandAllowed("set_disk_latency")}
+                      onChange={(event) => setDiskLatency(Number(event.target.value))}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!canSend || !isCommandAllowed("set_disk_latency")}
+                    onClick={() =>
+                      handleCommand({ name: "set_disk_latency", disk_latency: diskLatency })
+                    }
+                  >
+                    Apply Disk Latency
+                  </button>
+                </>
+              ) : null}
+
+              {isCommandAllowed("set_terminal_latency") ? (
+                <>
+                  <label>
+                    Terminal latency
+                    <input
+                      type="number"
+                      min={1}
+                      max={64}
+                      value={terminalLatency}
+                      disabled={!canSend || !isCommandAllowed("set_terminal_latency")}
+                      onChange={(event) => setTerminalLatency(Number(event.target.value))}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!canSend || !isCommandAllowed("set_terminal_latency")}
+                    onClick={() =>
+                      handleCommand({
+                        name: "set_terminal_latency",
+                        terminal_latency: terminalLatency,
+                      })
+                    }
+                  >
+                    Apply Terminal Latency
+                  </button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
         </>
       ) : null}
 
@@ -311,7 +472,7 @@ export function LessonRunnerPanel({
                     .filter((item) => !item.passed)
                     .map((item) => (
                       <p key={`${item.name}.${item.type}`} className="lesson-outcome">
-                        - {describeCheck(item)}
+                        - {describeCheck(item)} {failureGuidance(item)}
                       </p>
                     ))
                 ) : (
@@ -334,6 +495,28 @@ export function LessonRunnerPanel({
                 )}
               </section>
             </div>
+          ) : null}
+
+          {!runResult.passed && selectedStage ? (
+            <section className="validator-group">
+              <h3>Expected vs Actual</h3>
+              <p className="lesson-outcome">
+                - Expected: complete all pass conditions listed for this stage.
+              </p>
+              {(selectedStage.pass_conditions ?? []).map((item) => (
+                <p key={item} className="lesson-outcome">
+                  - Target: {item}
+                </p>
+              ))}
+              {(selectedStage.expected_visual_cues ?? []).map((item) => (
+                <p key={item} className="lesson-outcome">
+                  - Visual cue: {item}
+                </p>
+              ))}
+              <p className="lesson-outcome">
+                - Actual: check failed items above, adjust actions, then re-run Check Result.
+              </p>
+            </section>
           ) : null}
         </>
       ) : null}
@@ -372,23 +555,51 @@ function describeCheck(item: {
 }
 
 function humanizeMessage(message: string): string {
-  if (message.startsWith("missing trace event ")) {
-    const eventName = message.replace("missing trace event ", "");
-    return `Trace is missing event '${eventName}'.`;
+  const missingTrace = message.match(/^missing trace event\s+(.+)$/);
+  if (missingTrace) {
+    return `Trace is missing required event '${missingTrace[1]}'.`;
   }
-  if (message.startsWith("metric ")) {
-    return message
-      .replace("metric ", "Metric '")
-      .replace(" got=", "' is ")
-      .replace(" want=", ", expected ")
-      .replace(" want<=", ", expected <= ");
+
+  const metricEq = message.match(/^metric\s+(\S+)\s+got=([^\s]+)\s+want=([^\s]+)$/);
+  if (metricEq) {
+    const [, key, got, want] = metricEq;
+    return `Metric '${key}' is ${got}, expected exactly ${want}.`;
   }
-  if (message.startsWith("fault ")) {
-    return message
-      .replace("fault ", "Fault '")
-      .replace(" got=", "' is ")
-      .replace(" want=", ", expected ")
-      .replace(" want<=", ", expected <= ");
+
+  const metricLTE = message.match(/^metric\s+(\S+)\s+got=([^\s]+)\s+want<=([^\s]+)$/);
+  if (metricLTE) {
+    const [, key, got, want] = metricLTE;
+    return `Metric '${key}' is ${got}, expected <= ${want}.`;
   }
+
+  const faultEq = message.match(/^fault\s+(\S+)\s+got=([^\s]+)\s+want=([^\s]+)$/);
+  if (faultEq) {
+    const [, key, got, want] = faultEq;
+    return `Fault '${key}' is ${got}, expected exactly ${want}.`;
+  }
+
+  const faultLTE = message.match(/^fault\s+(\S+)\s+got=([^\s]+)\s+want<=([^\s]+)$/);
+  if (faultLTE) {
+    const [, key, got, want] = faultLTE;
+    return `Fault '${key}' is ${got}, expected <= ${want}.`;
+  }
+
   return message;
+}
+
+function failureGuidance(item: { type: string }): string {
+  switch (item.type) {
+    case "trace_contains_all":
+      return "Inspect timeline ordering and trace events.";
+    case "metric_eq":
+    case "metric_lte":
+      return "Inspect metrics panel values and scheduler behavior.";
+    case "fault_eq":
+    case "fault_lte":
+      return "Inspect memory panel fault counters and recent access pattern.";
+    case "fs_ok":
+      return "Inspect filesystem-related trace events and invariant status.";
+    default:
+      return "";
+  }
 }

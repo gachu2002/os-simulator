@@ -140,6 +140,33 @@ select:focus-visible {
   border-left: 4px solid var(--accent-soft);
 }
 
+.section-grid,
+.lesson-card-grid {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.section-card,
+.lesson-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: var(--surface-subtle);
+}
+
+.section-card h3,
+.lesson-card h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.section-overview-panel,
+.section-page-panel {
+  border-left: 4px solid #cbd5e1;
+}
+
 .control-row,
 .lesson-controls {
   display: flex;

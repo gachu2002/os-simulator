@@ -9,6 +9,7 @@ type ChallengeStartRequest struct {
 type ChallengeLimitsDTO struct {
 	MaxSteps         int `json:"max_steps,omitempty"`
 	MaxPolicyChanges int `json:"max_policy_changes,omitempty"`
+	MaxConfigChanges int `json:"max_config_changes,omitempty"`
 }
 
 type ChallengeStartResponse struct {

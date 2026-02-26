@@ -32,7 +32,7 @@ All HTTP errors return:
 
 ### `GET /lessons`
 
-Returns lesson summaries with stage metadata (`index`, `id`, `title`, `theory`, `objective`, `pass_conditions`, `prerequisites`, `allowed_commands`, `limits`) plus progress status (`attempts`, `completed`, `unlocked`). Use optional query param `learner_id` to scope unlock/progress per learner. Default catalog currently ships 20 lessons with 3 stages each.
+Returns lesson summaries with section metadata (`section_id`, `section_title`, `difficulty`, `estimated_minutes`, `chapter_refs`) and stage metadata (`index`, `id`, `title`, `theory`, `theory_detail`, `objective`, `goal`, `pass_conditions`, `prerequisites`, `allowed_commands`, `action_descriptions`, `expected_visual_cues`, `limits`) plus progress status (`attempts`, `completed`, `unlocked`). `allowed_commands` may include tuning actions such as `set_frames`, `set_tlb_entries`, `set_disk_latency`, and `set_terminal_latency`. `limits` includes `max_steps`, `max_policy_changes`, and `max_config_changes`. Use optional query param `learner_id` to scope unlock/progress per learner. Default catalog currently ships 28 lessons with 3 stages each.
 
 ## Challenge Start
 
@@ -48,7 +48,7 @@ Body:
 }
 ```
 
-Returns lesson-stage attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits).
+Returns lesson-stage attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits including optional `max_config_changes`).
 
 ## Challenge Grade
 
@@ -83,4 +83,4 @@ Outbound event types:
 - `session.snapshot`
 - `session.error`
 
-For challenge sessions, `session.snapshot` may include `snapshot.challenge` budget fields (`max_steps`, `used_steps`, `remaining_steps`, and policy-change counterparts) to drive live exercise limits in the UI.
+For challenge sessions, `session.snapshot` may include `snapshot.challenge` budget fields (`max_steps`, `used_steps`, `remaining_steps`, plus policy and config-change counterparts) to drive live exercise limits in the UI.

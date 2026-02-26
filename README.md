@@ -7,7 +7,7 @@ Deterministic OSTEP-aligned simulator core implemented in Go with:
 - syscall/trap path with async device interrupts
 - virtual memory (VA->PA, TLB, faults, FIFO replacement)
 - filesystem path traversal + block mapping
-- lesson engine + 20 lessons / 60 stages with stage missions (observe -> diagnose -> apply)
+- lesson engine + 28 lessons / 84 stages with stage missions (observe -> diagnose -> apply)
 - prerequisite-gated curriculum path (CPU -> Memory -> Concurrency -> Persistence)
 - basic completion analytics per challenge attempt
 

@@ -55,7 +55,7 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allowedCommands := challengeAllowedCommands(prepared)
-	maxSteps, maxPolicyChanges := challengeLimits(prepared)
+	maxSteps, maxPolicyChanges, maxConfigChanges := challengeLimits(prepared)
 
 	if err := applyBootstrapCommands(session, prepared.Stage.Bootstrap); err != nil {
 		respondError(w, r, http.StatusBadRequest, "challenge_start_failed", err.Error())
@@ -66,6 +66,7 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 		allowedCommands,
 		maxSteps,
 		maxPolicyChanges,
+		maxConfigChanges,
 	))
 
 	attempt := s.challengeAttempts.Create(session.ID(), learnerID, prepared)
@@ -81,6 +82,7 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 		Limits: ChallengeLimitsDTO{
 			MaxSteps:         maxSteps,
 			MaxPolicyChanges: maxPolicyChanges,
+			MaxConfigChanges: maxConfigChanges,
 		},
 	})
 }
@@ -177,16 +179,42 @@ func challengeAllowedCommands(prepared lessons.PreparedStage) []string {
 	return slices.Clone(prepared.Stage.AllowedCmds)
 }
 
-func challengeLimits(prepared lessons.PreparedStage) (int, int) {
+func challengeLimits(prepared lessons.PreparedStage) (int, int, int) {
 	maxSteps := prepared.Stage.Limits.MaxSteps
 	if maxSteps <= 0 {
 		maxSteps = defaultChallengeMaxSteps
 	}
+
+	allowed := challengeAllowedCommands(prepared)
+
 	maxPolicyChanges := prepared.Stage.Limits.MaxPolicyChanges
-	if maxPolicyChanges <= 0 {
+	if maxPolicyChanges <= 0 && hasAllowedCommand(allowed, "policy") {
 		maxPolicyChanges = defaultChallengeMaxPolicyChanges
 	}
-	return maxSteps, maxPolicyChanges
+
+	maxConfigChanges := prepared.Stage.Limits.MaxConfigChanges
+	if maxConfigChanges <= 0 && hasAnyAllowedCommands(allowed, "set_frames", "set_tlb_entries", "set_disk_latency", "set_terminal_latency") {
+		maxConfigChanges = defaultChallengeMaxConfigChanges
+	}
+	return maxSteps, maxPolicyChanges, maxConfigChanges
+}
+
+func hasAllowedCommand(allowed []string, target string) bool {
+	for _, item := range allowed {
+		if item == target {
+			return true
+		}
+	}
+	return false
+}
+
+func hasAnyAllowedCommands(allowed []string, targets ...string) bool {
+	for _, target := range targets {
+		if hasAllowedCommand(allowed, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func applyBootstrapCommands(session *Session, commands []sim.Command) error {

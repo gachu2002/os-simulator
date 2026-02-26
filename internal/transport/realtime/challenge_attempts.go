@@ -13,6 +13,7 @@ var defaultChallengeAllowedCommands = []string{"step", "run", "pause", "policy",
 const (
 	defaultChallengeMaxSteps         = 40
 	defaultChallengeMaxPolicyChanges = 3
+	defaultChallengeMaxConfigChanges = 2
 )
 
 type ChallengeAttempt struct {

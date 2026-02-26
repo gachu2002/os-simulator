@@ -16,9 +16,16 @@ import { initialSessionState, sessionReducer } from "../state/sessionReducer";
 interface UseLessonRunnerOptions {
   baseURL: string;
   onGradeResult?: (result: ChallengeGradeResponse) => void;
+  preferredLessonID?: string;
+  preferredStageIndex?: number;
 }
 
-export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptions) {
+export function useLessonRunner({
+  baseURL,
+  onGradeResult,
+  preferredLessonID,
+  preferredStageIndex,
+}: UseLessonRunnerOptions) {
   const [liveState, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [selectedLessonIDState, setSelectedLessonIDState] = useState("");
   const [selectedStageIndexState, setSelectedStageIndexState] = useState(0);
@@ -59,11 +66,14 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
     if (lessons.length === 0) {
       return "";
     }
+    if (preferredLessonID && lessons.some((lesson) => lesson.id === preferredLessonID)) {
+      return preferredLessonID;
+    }
     if (lessons.some((lesson) => lesson.id === selectedLessonIDState)) {
       return selectedLessonIDState;
     }
     return lessons[0].id;
-  }, [lessons, selectedLessonIDState]);
+  }, [lessons, preferredLessonID, selectedLessonIDState]);
 
   const selectedLesson = useMemo(
     () => lessons.find((lesson) => lesson.id === selectedLessonID) ?? null,
@@ -75,12 +85,19 @@ export function useLessonRunner({ baseURL, onGradeResult }: UseLessonRunnerOptio
       return 0;
     }
     if (
+      typeof preferredStageIndex === "number" &&
+      selectedLesson.id === preferredLessonID &&
+      selectedLesson.stages.some((stage) => stage.index === preferredStageIndex)
+    ) {
+      return preferredStageIndex;
+    }
+    if (
       selectedLesson.stages.some((stage) => stage.index === selectedStageIndexState)
     ) {
       return selectedStageIndexState;
     }
     return selectedLesson.stages[0]?.index ?? 0;
-  }, [selectedLesson, selectedStageIndexState]);
+  }, [preferredLessonID, preferredStageIndex, selectedLesson, selectedStageIndexState]);
 
   const selectedStage = useMemo(() => {
     if (!selectedLesson) {

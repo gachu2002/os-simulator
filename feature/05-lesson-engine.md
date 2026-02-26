@@ -1,6 +1,6 @@
 # 05) Lesson Engine
 
-20-lesson / 60-stage OSTEP-aligned catalog where each lesson stage is a mission (observe, diagnose, apply), with prerequisite gating, validators, and hint progression.
+28-lesson / 84-stage OSTEP-aligned catalog where each lesson stage is a mission (observe, diagnose, apply), with prerequisite gating, validators, and hint progression.
 
 ```mermaid
 flowchart LR

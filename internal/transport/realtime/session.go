@@ -28,7 +28,7 @@ func (m *SessionManager) Create(cfg SessionConfig) (*Session, error) {
 		return nil, err
 	}
 	id := fmt.Sprintf("s-%06d", m.nextID.Add(1))
-	s := &Session{id: id, engine: e, cfg: cfg}
+	s := &Session{id: id, engine: e, cfg: cfg, runtime: cfg}
 	m.mu.Lock()
 	m.sessions[id] = s
 	m.mu.Unlock()
@@ -47,6 +47,7 @@ type Session struct {
 	mu      sync.Mutex
 	engine  *sim.Engine
 	cfg     SessionConfig
+	runtime SessionConfig
 	policy  *ChallengeCommandPolicy
 	nextSeq uint64
 }
@@ -137,6 +138,44 @@ func (s *Session) applyLocked(cmd Command) error {
 			simCmd.Quantum = 2
 		}
 		return s.engine.Execute(simCmd)
+	case "set_frames":
+		if cmd.Frames <= 0 {
+			return fmt.Errorf("set_frames requires positive frames")
+		}
+		tlb := s.runtime.TLBEntries
+		if tlb <= 0 {
+			tlb = cmd.Frames
+		}
+		s.engine.ConfigureMemory(cmd.Frames, tlb)
+		s.runtime.Frames = cmd.Frames
+		s.runtime.TLBEntries = tlb
+		return nil
+	case "set_tlb_entries":
+		if cmd.TLBEntries <= 0 {
+			return fmt.Errorf("set_tlb_entries requires positive tlb_entries")
+		}
+		frames := s.runtime.Frames
+		if frames <= 0 {
+			frames = cmd.TLBEntries
+		}
+		s.engine.ConfigureMemory(frames, cmd.TLBEntries)
+		s.runtime.Frames = frames
+		s.runtime.TLBEntries = cmd.TLBEntries
+		return nil
+	case "set_disk_latency":
+		if cmd.DiskLatency <= 0 {
+			return fmt.Errorf("set_disk_latency requires positive disk_latency")
+		}
+		s.engine.ConfigureDevices(cmd.DiskLatency, s.runtime.TerminalLatency)
+		s.runtime.DiskLatency = cmd.DiskLatency
+		return nil
+	case "set_terminal_latency":
+		if cmd.TerminalLatency <= 0 {
+			return fmt.Errorf("set_terminal_latency requires positive terminal_latency")
+		}
+		s.engine.ConfigureDevices(s.runtime.DiskLatency, cmd.TerminalLatency)
+		s.runtime.TerminalLatency = cmd.TerminalLatency
+		return nil
 	case "reset":
 		e := sim.NewEngine(s.cfg.Seed, s.cfg.CheckpointEvery)
 		e.ConfigureMemory(s.cfg.Frames, s.cfg.TLBEntries)
@@ -145,6 +184,7 @@ func (s *Session) applyLocked(cmd Command) error {
 			return err
 		}
 		s.engine = e
+		s.runtime = s.cfg
 		return nil
 	default:
 		return fmt.Errorf("unknown command %q", cmd.Name)
@@ -185,13 +225,20 @@ func (s *Session) snapshotEventLocked(lastCommand string) Event {
 		if remainingPolicy < 0 {
 			remainingPolicy = 0
 		}
+		remainingConfig := s.policy.MaxConfigChanges - usage.UsedConfigChanges
+		if remainingConfig < 0 {
+			remainingConfig = 0
+		}
 		snapshot.Challenge = &ChallengeStateDTO{
 			MaxSteps:           s.policy.MaxSteps,
 			MaxPolicyChanges:   s.policy.MaxPolicyChanges,
+			MaxConfigChanges:   s.policy.MaxConfigChanges,
 			UsedSteps:          usage.UsedSteps,
 			UsedPolicyChanges:  usage.UsedPolicyChanges,
+			UsedConfigChanges:  usage.UsedConfigChanges,
 			RemainingSteps:     remainingSteps,
 			RemainingPolicyOps: remainingPolicy,
+			RemainingConfigOps: remainingConfig,
 		}
 	}
 	return Event{

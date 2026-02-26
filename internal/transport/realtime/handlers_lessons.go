@@ -25,27 +25,50 @@ func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 		for idx, stage := range lesson.Stages {
 			status := engine.StageStatus(lesson.ID, stage)
 			stages = append(stages, LessonStageSummary{
-				Index:           idx,
-				ID:              stage.ID,
-				Title:           stage.Title,
-				Theory:          stage.Hints.Concept,
-				Objective:       stage.Objective,
-				PassConditions:  stagePassConditions(stage),
-				Prerequisites:   stage.Prerequisites,
-				AllowedCommands: stage.AllowedCmds,
+				Index:              idx,
+				ID:                 stage.ID,
+				Title:              stage.Title,
+				Theory:             stage.Hints.Concept,
+				TheoryDetail:       stage.TheoryDetail,
+				Objective:          stage.Objective,
+				Goal:               stage.Goal,
+				PassConditions:     stagePassConditions(stage),
+				Prerequisites:      stage.Prerequisites,
+				AllowedCommands:    stage.AllowedCmds,
+				ActionDescriptions: convertActionDescriptions(stage.ActionDescriptions),
+				ExpectedVisualCues: stage.ExpectedVisualCues,
 				Limits: ChallengeLimitsDTO{
 					MaxSteps:         stage.Limits.MaxSteps,
 					MaxPolicyChanges: stage.Limits.MaxPolicyChanges,
+					MaxConfigChanges: stage.Limits.MaxConfigChanges,
 				},
 				Attempts:  status.Attempts,
 				Completed: status.Completed,
 				Unlocked:  status.Unlocked,
 			})
 		}
-		out = append(out, LessonSummary{ID: lesson.ID, Title: lesson.Title, Module: lesson.Module, Stages: stages})
+		out = append(out, LessonSummary{
+			ID:               lesson.ID,
+			Title:            lesson.Title,
+			Module:           lesson.Module,
+			SectionID:        lesson.SectionID,
+			SectionTitle:     lesson.SectionTitle,
+			Difficulty:       lesson.Difficulty,
+			EstimatedMinutes: lesson.EstimatedMinutes,
+			ChapterRefs:      lesson.ChapterRefs,
+			Stages:           stages,
+		})
 	}
 
 	respondJSON(w, http.StatusOK, LessonsResponse{Lessons: out})
+}
+
+func convertActionDescriptions(items []lessons.ActionDescription) []LessonActionDescription {
+	out := make([]LessonActionDescription, 0, len(items))
+	for _, item := range items {
+		out = append(out, LessonActionDescription{Command: item.Command, Description: item.Description})
+	}
+	return out
 }
 
 func normalizeLearnerID(value string) string {

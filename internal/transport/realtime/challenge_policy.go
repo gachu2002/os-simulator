@@ -6,16 +6,19 @@ type ChallengeCommandPolicy struct {
 	allowed          map[string]struct{}
 	MaxSteps         int
 	MaxPolicyChanges int
+	MaxConfigChanges int
 	usedSteps        int
 	usedPolicyChange int
+	usedConfigChange int
 }
 
 type ChallengeUsage struct {
 	UsedSteps         int
 	UsedPolicyChanges int
+	UsedConfigChanges int
 }
 
-func NewChallengeCommandPolicy(allowedCommands []string, maxSteps, maxPolicyChanges int) ChallengeCommandPolicy {
+func NewChallengeCommandPolicy(allowedCommands []string, maxSteps, maxPolicyChanges, maxConfigChanges int) ChallengeCommandPolicy {
 	allowed := make(map[string]struct{}, len(allowedCommands))
 	for _, name := range allowedCommands {
 		allowed[name] = struct{}{}
@@ -24,6 +27,7 @@ func NewChallengeCommandPolicy(allowedCommands []string, maxSteps, maxPolicyChan
 		allowed:          allowed,
 		MaxSteps:         maxSteps,
 		MaxPolicyChanges: maxPolicyChanges,
+		MaxConfigChanges: maxConfigChanges,
 	}
 }
 
@@ -61,11 +65,16 @@ func (p *ChallengeCommandPolicy) Validate(cmd Command) error {
 			return fmt.Errorf("policy change limit exceeded: used=%d max=%d", p.usedPolicyChange, p.MaxPolicyChanges)
 		}
 		p.usedPolicyChange++
+	case "set_frames", "set_tlb_entries", "set_disk_latency", "set_terminal_latency":
+		if p.MaxConfigChanges > 0 && p.usedConfigChange+1 > p.MaxConfigChanges {
+			return fmt.Errorf("config change limit exceeded: used=%d max=%d", p.usedConfigChange, p.MaxConfigChanges)
+		}
+		p.usedConfigChange++
 	}
 
 	return nil
 }
 
 func (p ChallengeCommandPolicy) Usage() ChallengeUsage {
-	return ChallengeUsage{UsedSteps: p.usedSteps, UsedPolicyChanges: p.usedPolicyChange}
+	return ChallengeUsage{UsedSteps: p.usedSteps, UsedPolicyChanges: p.usedPolicyChange, UsedConfigChanges: p.usedConfigChange}
 }

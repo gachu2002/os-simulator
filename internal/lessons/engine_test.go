@@ -7,10 +7,10 @@ import (
 	"os-simulator-plan/internal/sim"
 )
 
-func TestDefaultCatalogHasTwentyLessons(t *testing.T) {
+func TestDefaultCatalogHasTwentyEightLessons(t *testing.T) {
 	e := NewEngine()
-	if got := len(e.Lessons()); got != 20 {
-		t.Fatalf("lesson count=%d want=20", got)
+	if got := len(e.Lessons()); got != 28 {
+		t.Fatalf("lesson count=%d want=28", got)
 	}
 }
 
@@ -23,15 +23,21 @@ func TestScenarioLessonsPassWithExpectedFeedbackKeys(t *testing.T) {
 		"l04-response-under-rr",
 		"l05-throughput-shared-cpu",
 		"l06-preemption-check",
+		"l06b-lottery-tradeoffs",
+		"l06c-quantum-response-tuning",
 		"l07-vm-fault-sequence",
 		"l08-vm-pressure-repeat",
 		"l09-vm-tlb-activity",
 		"l10-vm-replacement-fifo",
 		"l11-vm-mixed-access",
+		"l11b-vm-locality-window",
+		"l11c-vm-fault-burst-diagnose",
 		"l12-irq-wakeup-read",
 		"l13-terminal-write-irq",
 		"l14-sleep-wakeup",
 		"l15-mixed-blocking",
+		"l15b-irq-interleave-order",
+		"l15c-blocked-progress-guarantee",
 		"l16-fs-open-traversal",
 	}
 	for _, id := range orderedIDs {
@@ -56,8 +62,8 @@ func TestCompletionAnalytics(t *testing.T) {
 	}
 
 	a := e.CompletionAnalytics()
-	if a.TotalStages != 60 {
-		t.Fatalf("total stages=%d want=60", a.TotalStages)
+	if a.TotalStages != 84 {
+		t.Fatalf("total stages=%d want=84", a.TotalStages)
 	}
 	if a.CompletedStages != 12 {
 		t.Fatalf("completed stages=%d want=12", a.CompletedStages)
@@ -115,6 +121,28 @@ func TestPrepareStageRespectsPrerequisites(t *testing.T) {
 	}
 }
 
+func TestStageThreeAllowsModuleSpecificConfigActions(t *testing.T) {
+	e := NewEngine()
+
+	lesson := e.catalog["l11c-vm-fault-burst-diagnose"]
+	stage := lesson.Stages[2]
+	if !contains(stage.AllowedCmds, "set_frames") || !contains(stage.AllowedCmds, "set_tlb_entries") {
+		t.Fatalf("expected memory stage s3 to allow frame/tlb configuration")
+	}
+	if stage.Limits.MaxConfigChanges <= 0 {
+		t.Fatalf("expected positive config-change limit for memory stage s3")
+	}
+
+	ioLesson := e.catalog["l15c-blocked-progress-guarantee"]
+	ioStage := ioLesson.Stages[2]
+	if !contains(ioStage.AllowedCmds, "set_disk_latency") || !contains(ioStage.AllowedCmds, "set_terminal_latency") {
+		t.Fatalf("expected concurrency stage s3 to allow device-latency tuning")
+	}
+	if ioStage.Limits.MaxConfigChanges <= 0 {
+		t.Fatalf("expected positive config-change limit for concurrency stage s3")
+	}
+}
+
 func runLessonPath(e *Engine, lessonID string) error {
 	for idx := 0; idx < 3; idx++ {
 		res, err := e.RunStage(lessonID, idx)
@@ -158,4 +186,13 @@ func TestHintProgressionLevels(t *testing.T) {
 	if r3.HintLevel != 3 || r3.Hint != "explicit" {
 		t.Fatalf("attempt3 hint mismatch: level=%d hint=%q", r3.HintLevel, r3.Hint)
 	}
+}
+
+func contains(items []string, target string) bool {
+	for _, item := range items {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }

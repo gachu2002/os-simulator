@@ -66,20 +66,37 @@ export interface SnapshotDTO {
   challenge?: {
     max_steps?: number;
     max_policy_changes?: number;
+    max_config_changes?: number;
     used_steps?: number;
     used_policy_changes?: number;
+    used_config_changes?: number;
     remaining_steps?: number;
     remaining_policy_changes?: number;
+    remaining_config_changes?: number;
   };
 }
 
 export interface Command {
-  name: "spawn" | "step" | "run" | "pause" | "policy" | "reset";
+  name:
+    | "spawn"
+    | "step"
+    | "run"
+    | "pause"
+    | "policy"
+    | "set_frames"
+    | "set_tlb_entries"
+    | "set_disk_latency"
+    | "set_terminal_latency"
+    | "reset";
   count?: number;
   process?: string;
   program?: string;
   policy?: "fifo" | "rr" | "mlfq";
   quantum?: number;
+  frames?: number;
+  tlb_entries?: number;
+  disk_latency?: number;
+  terminal_latency?: number;
 }
 
 export interface CommandEnvelope {

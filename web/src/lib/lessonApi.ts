@@ -10,20 +10,34 @@ export interface LessonStageSummary {
   id: string;
   title: string;
   theory?: string;
+  theory_detail?: string;
   objective?: string;
+  goal?: string;
   pass_conditions?: string[];
   prerequisites?: string[];
   allowed_commands?: string[];
+  action_descriptions?: ActionDescription[];
+  expected_visual_cues?: string[];
   limits?: ChallengeLimits;
   attempts?: number;
   completed?: boolean;
   unlocked?: boolean;
 }
 
+export interface ActionDescription {
+  command: string;
+  description: string;
+}
+
 export interface LessonSummary {
   id: string;
   title: string;
   module: string;
+  section_id?: string;
+  section_title?: string;
+  difficulty?: string;
+  estimated_minutes?: number;
+  chapter_refs?: string[];
   stages: LessonStageSummary[];
 }
 
@@ -51,6 +65,7 @@ export interface LessonRunOutput {
 export interface ChallengeLimits {
   max_steps?: number;
   max_policy_changes?: number;
+  max_config_changes?: number;
 }
 
 export interface ChallengeStartResponse {
