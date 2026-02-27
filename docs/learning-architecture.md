@@ -35,14 +35,15 @@ Each screen should support the challenge learning loop.
 
 ## Curriculum Order
 
-Module unlock sequence:
+OSTEP subject sequence in UI:
 
-1. CPU Virtualization and Scheduling
-2. Memory Virtualization
-3. Concurrency and Interrupts
-4. Persistence and Filesystem
+1. Introduction (coming soon)
+2. Virtualization (active: CPU + Memory lessons)
+3. Concurrency (active)
+4. Persistence (active)
+5. Security (coming soon)
 
-Prerequisites flow in this same order; later modules require baseline mastery in earlier modules.
+Active prerequisites flow as Virtualization -> Concurrency -> Persistence.
 
 ## Mission Contract (Canonical Lesson Schema v2)
 

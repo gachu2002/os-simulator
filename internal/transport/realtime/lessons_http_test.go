@@ -40,6 +40,12 @@ func TestLessonsListEndpoint(t *testing.T) {
 	if out.Lessons[0].SectionID == "" || out.Lessons[0].SectionTitle == "" {
 		t.Fatalf("expected section metadata on lesson summary")
 	}
+	if out.Lessons[0].SectionID != "virtualization" {
+		t.Fatalf("first lesson section id=%q want=%q", out.Lessons[0].SectionID, "virtualization")
+	}
+	if out.Lessons[0].SectionTitle != "Virtualization" {
+		t.Fatalf("first lesson section title=%q want=%q", out.Lessons[0].SectionTitle, "Virtualization")
+	}
 	if out.Lessons[0].Stages[0].Goal == "" {
 		t.Fatalf("expected goal metadata on stage summary")
 	}

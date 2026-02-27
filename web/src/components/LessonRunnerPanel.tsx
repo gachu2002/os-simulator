@@ -25,10 +25,7 @@ export function LessonRunnerPanel({
   const [diskLatency, setDiskLatency] = useState(3);
   const [terminalLatency, setTerminalLatency] = useState(1);
   const {
-    lessons,
     selectedLesson,
-    selectedLessonID,
-    selectedStageIndex,
     selectedStage,
     runResult,
     attempt,
@@ -43,8 +40,6 @@ export function LessonRunnerPanel({
     isGradePending,
     setPolicy,
     setQuantum,
-    setSelectedStageIndexState,
-    handleLessonChange,
     handleStart,
     handleCommand,
     handleGrade,
@@ -81,13 +76,19 @@ export function LessonRunnerPanel({
 
   return (
     <section className="panel lesson-panel">
-      <h2>Challenge Exercise</h2>
+      <h2>{selectedLesson?.title ?? "Challenge"}</h2>
+      <p className="lesson-outcome">
+        {selectedStage?.title ?? "Select a challenge from the overview page."}
+      </p>
+      <p className="subtitle">
+        {selectedStage?.objective ?? "Review theory, then run the exercise and check results."}
+      </p>
       <div className="mode-nav challenge-subnav" role="tablist" aria-label="Challenge views">
         <button
           type="button"
           role="tab"
           aria-selected={viewMode === "learn"}
-          className={viewMode === "learn" ? "mode-link active" : "mode-link"}
+          className={viewMode === "learn" ? "mode-link active btn btn-secondary" : "mode-link btn btn-secondary"}
           onClick={() => setViewMode("learn")}
         >
           Learn
@@ -96,52 +97,24 @@ export function LessonRunnerPanel({
           type="button"
           role="tab"
           aria-selected={viewMode === "exercise"}
-          className={viewMode === "exercise" ? "mode-link active" : "mode-link"}
+          className={viewMode === "exercise" ? "mode-link active btn btn-primary" : "mode-link btn btn-primary"}
           onClick={() => setViewMode("exercise")}
         >
           Exercise
         </button>
       </div>
       <div className="lesson-controls">
-        <label>
-          Lesson
-          <select
-            value={selectedLessonID}
-            disabled={isLessonsLoading || lessons.length === 0 || isStartPending}
-            onChange={(event) => handleLessonChange(event.target.value)}
-          >
-            {lessons.map((lesson) => (
-              <option key={lesson.id} value={lesson.id}>
-                {lesson.module} - {lesson.title}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Stage
-          <select
-            value={selectedStageIndex}
-            disabled={!selectedLesson || isStartPending}
-            onChange={(event) => setSelectedStageIndexState(Number(event.target.value))}
-          >
-            {(selectedLesson?.stages ?? []).map((stage) => (
-              <option key={stage.id} value={stage.index} disabled={stage.unlocked === false}>
-                {stage.title}{stage.unlocked === false ? " (locked)" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <button
           type="button"
-          disabled={isStartPending || !selectedLessonID || selectedStage?.unlocked === false}
+          className="btn btn-primary"
+          disabled={isStartPending || isLessonsLoading || !selectedLesson || selectedStage?.unlocked === false}
           onClick={handleStart}
         >
           {isStartPending ? "Starting..." : "Start Stage"}
         </button>
         <button
           type="button"
+          className="btn btn-success"
           disabled={isGradePending || !attempt?.attempt_id}
           onClick={handleGrade}
         >
@@ -184,66 +157,57 @@ export function LessonRunnerPanel({
               selectedStage.theory ??
               "Study trace order and outcome metrics before running the exercise."}
           </p>
-
-          <h3>Goal and Result To Achieve</h3>
-          <p className="lesson-outcome">
-            {selectedStage.goal ?? selectedStage.objective ?? selectedStage.title}
-          </p>
-
-          {(selectedStage.pass_conditions ?? []).length ? (
-            <div className="lesson-validator-results">
-              <h3>Pass Conditions</h3>
-              {(selectedStage.pass_conditions ?? []).map((item) => (
-                <p key={item} className="lesson-outcome">
-                  - {item}
-                </p>
-              ))}
-            </div>
-          ) : null}
-
-          {(selectedStage.action_descriptions ?? []).length ? (
-            <div className="lesson-validator-results">
-              <h3>Actions You Can Do</h3>
-              {(selectedStage.action_descriptions ?? []).map((item) => (
-                <p key={item.command} className="lesson-outcome">
-                  - {item.command}: {item.description}
-                </p>
-              ))}
-            </div>
-          ) : (
-            <p className="lesson-outcome">
-              Allowed actions: {(selectedStage.allowed_commands ?? []).join(", ") || "step, run, pause, reset"}
-            </p>
-          )}
-
-          {(selectedStage.expected_visual_cues ?? []).length ? (
-            <div className="lesson-validator-results">
-              <h3>Expected Visual Result</h3>
-              {(selectedStage.expected_visual_cues ?? []).map((item) => (
-                <p key={item} className="lesson-outcome">
-                  - {item}
-                </p>
-              ))}
-            </div>
-          ) : null}
-
-          <p className="lesson-outcome">
-            Limits: steps {selectedStage.limits?.max_steps ?? 0}, policy edits {selectedStage.limits?.max_policy_changes ?? 0}, config edits {selectedStage.limits?.max_config_changes ?? 0}
-          </p>
-          <p className="challenge-note">
-            Move to Exercise when ready, run actions, then click Check to validate against deterministic rules.
-          </p>
         </section>
       ) : null}
 
       {viewMode === "exercise" && attempt ? (
         <>
+          <h3>Goal and Result To Achieve</h3>
           <p className="lesson-outcome">
             Goal: {selectedStage?.goal ?? selectedStage?.objective ?? selectedStage?.title ?? "Run actions and pass checks."}
           </p>
+
+          {(selectedStage?.pass_conditions ?? []).length ? (
+            <div className="lesson-validator-results">
+              <h3>Pass Conditions</h3>
+              {(selectedStage?.pass_conditions ?? []).map((item) => (
+                <p key={item} className="lesson-outcome">
+                  - {item}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
+          {(selectedStage?.action_descriptions ?? []).length ? (
+            <div className="lesson-validator-results">
+              <h3>Actions You Can Do</h3>
+              {(selectedStage?.action_descriptions ?? []).map((item) => (
+                <p key={item.command} className="lesson-outcome">
+                  - {item.command}: {item.description}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
+          {(selectedStage?.expected_visual_cues ?? []).length ? (
+            <div className="lesson-validator-results">
+              <h3>Expected Visual Result</h3>
+              {(selectedStage?.expected_visual_cues ?? []).map((item) => (
+                <p key={item} className="lesson-outcome">
+                  - {item}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
+          <p className="lesson-outcome">
+            Limits: steps {selectedStage?.limits?.max_steps ?? 0}, policy edits {selectedStage?.limits?.max_policy_changes ?? 0}, config edits {selectedStage?.limits?.max_config_changes ?? 0}
+          </p>
+
           <div className="control-row">
             <button
               type="button"
+              className="btn btn-secondary"
               disabled={!canSend || !isCommandAllowed("run")}
               onClick={() => handleCommand({ name: "run", count: 8 })}
             >
@@ -251,6 +215,7 @@ export function LessonRunnerPanel({
             </button>
             <button
               type="button"
+              className="btn btn-secondary"
               disabled={!canSend || !isCommandAllowed("step")}
               onClick={() => handleCommand({ name: "step", count: 1 })}
             >
@@ -258,6 +223,7 @@ export function LessonRunnerPanel({
             </button>
             <button
               type="button"
+              className="btn btn-ghost"
               disabled={!canSend || !isCommandAllowed("pause")}
               onClick={() => handleCommand({ name: "pause" })}
             >
@@ -265,6 +231,7 @@ export function LessonRunnerPanel({
             </button>
             <button
               type="button"
+              className="btn btn-danger"
               disabled={!canSend || !isCommandAllowed("reset")}
               onClick={() => handleCommand({ name: "reset" })}
             >
@@ -301,6 +268,7 @@ export function LessonRunnerPanel({
               </label>
               <button
                 type="button"
+                className="btn btn-primary"
                 disabled={!canSend || !isCommandAllowed("policy")}
                 onClick={() =>
                   handleCommand({
@@ -332,6 +300,7 @@ export function LessonRunnerPanel({
                   </label>
                   <button
                     type="button"
+                    className="btn btn-primary"
                     disabled={!canSend || !isCommandAllowed("set_frames")}
                     onClick={() => handleCommand({ name: "set_frames", frames })}
                   >
@@ -355,6 +324,7 @@ export function LessonRunnerPanel({
                   </label>
                   <button
                     type="button"
+                    className="btn btn-primary"
                     disabled={!canSend || !isCommandAllowed("set_tlb_entries")}
                     onClick={() =>
                       handleCommand({ name: "set_tlb_entries", tlb_entries: tlbEntries })
@@ -384,6 +354,7 @@ export function LessonRunnerPanel({
                   </label>
                   <button
                     type="button"
+                    className="btn btn-primary"
                     disabled={!canSend || !isCommandAllowed("set_disk_latency")}
                     onClick={() =>
                       handleCommand({ name: "set_disk_latency", disk_latency: diskLatency })
@@ -409,6 +380,7 @@ export function LessonRunnerPanel({
                   </label>
                   <button
                     type="button"
+                    className="btn btn-primary"
                     disabled={!canSend || !isCommandAllowed("set_terminal_latency")}
                     onClick={() =>
                       handleCommand({

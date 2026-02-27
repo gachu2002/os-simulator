@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import { LessonRunnerPanel } from "./components/LessonRunnerPanel";
 import { OverviewPage } from "./components/OverviewPage";
-import { SectionPage } from "./components/SectionPage";
 import { VisualizationSuite } from "./components/VisualizationSuite";
 import { useLessonsCatalog } from "./hooks/useLessonsCatalog";
 import type { ChallengeGradeResponse } from "./lib/lessonApi";
@@ -11,11 +10,10 @@ import { snapshotFromChallengeGrade } from "./state/lessonSnapshot";
 
 type AppRoute =
   | { kind: "overview" }
-  | { kind: "section"; sectionID: string }
   | { kind: "challenge"; lessonID?: string; stageIndex?: number };
 
 export function App() {
-  const [baseURL, setBaseURL] = useState(defaultBaseURL());
+  const [baseURL] = useState(defaultBaseURL());
   const [routePath, setRoutePath] = useState(() =>
     typeof window === "undefined" ? "/" : window.location.pathname,
   );
@@ -58,6 +56,14 @@ export function App() {
 
   return (
     <main className="app-shell">
+      {route.kind === "challenge" ? (
+        <div className="top-nav">
+          <button type="button" className="btn btn-ghost" onClick={() => handleNavigate("/")}>
+            Home
+          </button>
+        </div>
+      ) : null}
+
       <header className="hero">
         <p className="eyebrow">Challenge</p>
         <h1>OSTEP Simulator Course</h1>
@@ -65,27 +71,7 @@ export function App() {
           Learn operating systems through sectioned lessons and interactive deterministic
           challenges.
         </p>
-        <div className="control-row">
-          <button type="button" onClick={() => handleNavigate("/")}>Overview</button>
-          <button type="button" onClick={() => handleNavigate("/challenge")}>Challenge</button>
-        </div>
       </header>
-
-      <section className="panel challenge-setup-panel">
-        <h2>Challenge Setup</h2>
-        <label>
-          Server URL
-          <input
-            value={baseURL}
-            onChange={(event) => setBaseURL(event.target.value)}
-            placeholder="http://127.0.0.1:8080"
-          />
-        </label>
-        <p className="challenge-note">
-          Use Learn to understand the concept, then switch to Exercise to run actions and
-          validate with deterministic checks.
-        </p>
-      </section>
 
       {route.kind === "overview" ? (
         <OverviewPage
@@ -94,10 +80,6 @@ export function App() {
           errorMessage={errorMessage}
           onNavigate={handleNavigate}
         />
-      ) : null}
-
-      {route.kind === "section" ? (
-        <SectionPage lessons={lessons} sectionID={route.sectionID} onNavigate={handleNavigate} />
       ) : null}
 
       {route.kind === "challenge" ? (
@@ -143,26 +125,18 @@ function parseRoute(pathname: string): AppRoute {
   if (normalized === "/") {
     return { kind: "overview" };
   }
-  if (normalized === "/challenge") {
-    return { kind: "challenge" };
-  }
-
-  const sectionPrefix = "/sections/";
-  if (normalized.startsWith(sectionPrefix)) {
-    const sectionID = decodeURIComponent(normalized.slice(sectionPrefix.length));
-    if (sectionID !== "") {
-      return { kind: "section", sectionID };
-    }
-  }
 
   const challengePrefix = "/challenge/";
   if (normalized.startsWith(challengePrefix)) {
     const parts = normalized.slice(challengePrefix.length).split("/");
     const lessonID = decodeURIComponent(parts[0] ?? "").trim();
+    if (lessonID === "") {
+      return { kind: "overview" };
+    }
     const parsedStage = Number(parts[1]);
     return {
       kind: "challenge",
-      lessonID: lessonID === "" ? undefined : lessonID,
+      lessonID,
       stageIndex: Number.isFinite(parsedStage) ? parsedStage : 0,
     };
   }

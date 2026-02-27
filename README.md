@@ -8,7 +8,7 @@ Deterministic OSTEP-aligned simulator core implemented in Go with:
 - virtual memory (VA->PA, TLB, faults, FIFO replacement)
 - filesystem path traversal + block mapping
 - lesson engine + 28 lessons / 84 stages with stage missions (observe -> diagnose -> apply)
-- prerequisite-gated curriculum path (CPU -> Memory -> Concurrency -> Persistence)
+- prerequisite-gated curriculum path (Virtualization -> Concurrency -> Persistence)
 - basic completion analytics per challenge attempt
 
 ## Quick Start
@@ -29,7 +29,8 @@ pnpm --dir=web run dev
 
 Web routes:
 
-- `/challenge`: lesson-stage workflow (learn -> exercise -> check) with deterministic grading and hints
+- `/`: OSTEP subject overview with lesson nodes (Introduction/Security shown as coming soon)
+- `/challenge/:lessonId/:stageIndex`: lesson-stage workflow (learn -> exercise -> check) with deterministic grading and hints
 
 ## Tooling Baseline
 

@@ -32,7 +32,7 @@ All HTTP errors return:
 
 ### `GET /lessons`
 
-Returns lesson summaries with section metadata (`section_id`, `section_title`, `difficulty`, `estimated_minutes`, `chapter_refs`) and stage metadata (`index`, `id`, `title`, `theory`, `theory_detail`, `objective`, `goal`, `pass_conditions`, `prerequisites`, `allowed_commands`, `action_descriptions`, `expected_visual_cues`, `limits`) plus progress status (`attempts`, `completed`, `unlocked`). `allowed_commands` may include tuning actions such as `set_frames`, `set_tlb_entries`, `set_disk_latency`, and `set_terminal_latency`. `limits` includes `max_steps`, `max_policy_changes`, and `max_config_changes`. Use optional query param `learner_id` to scope unlock/progress per learner. Default catalog currently ships 28 lessons with 3 stages each.
+Returns lesson summaries with section metadata (`section_id`, `section_title`, `difficulty`, `estimated_minutes`, `chapter_refs`) and stage metadata (`index`, `id`, `title`, `theory`, `theory_detail`, `objective`, `goal`, `pass_conditions`, `prerequisites`, `allowed_commands`, `action_descriptions`, `expected_visual_cues`, `limits`) plus progress status (`attempts`, `completed`, `unlocked`). Active section ids are `virtualization`, `concurrency`, and `persistence`. `allowed_commands` may include tuning actions such as `set_frames`, `set_tlb_entries`, `set_disk_latency`, and `set_terminal_latency`. `limits` includes `max_steps`, `max_policy_changes`, and `max_config_changes`. Use optional query param `learner_id` to scope unlock/progress per learner. Default catalog currently ships 28 lessons with 3 stages each.
 
 ## Challenge Start
 

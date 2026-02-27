@@ -106,7 +106,7 @@ describe("LessonRunnerPanel", () => {
     renderWithQuery(<LessonRunnerPanel baseURL="http://localhost:8080" />);
 
     await waitFor(() => {
-      expect(screen.getByText("cpu - CPU Basics")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "CPU Basics" })).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: "Start Stage" }));

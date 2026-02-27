@@ -9,14 +9,64 @@ interface OverviewPageProps {
   onNavigate: (to: string) => void;
 }
 
-interface SectionSummary {
+interface LessonNode {
   id: string;
   title: string;
-  lessons: number;
+  status: "locked" | "ready" | "passed";
+  firstUnlockedStage: number;
+}
+
+interface SubjectBlock {
+  id: string;
+  title: string;
+  subtitle: string;
+  locked: boolean;
+  comingSoon: boolean;
+  lessonNodes: LessonNode[];
   completedStages: number;
   totalStages: number;
-  nextLessonID: string;
 }
+
+const OSTEP_SUBJECTS: Array<{
+  id: string;
+  title: string;
+  subtitle: string;
+  sectionIDs: string[];
+  comingSoon?: boolean;
+}> = [
+  {
+    id: "introduction",
+    title: "Introduction",
+    subtitle: "OSTEP setup and foundational framing",
+    sectionIDs: [],
+    comingSoon: true,
+  },
+  {
+    id: "virtualization",
+    title: "Virtualization",
+    subtitle: "CPU and memory virtualization lessons",
+    sectionIDs: ["virtualization"],
+  },
+  {
+    id: "concurrency",
+    title: "Concurrency",
+    subtitle: "Threads, wakeups, and interrupt-driven progress",
+    sectionIDs: ["concurrency"],
+  },
+  {
+    id: "persistence",
+    title: "Persistence",
+    subtitle: "Storage and filesystem correctness",
+    sectionIDs: ["persistence"],
+  },
+  {
+    id: "security",
+    title: "Security",
+    subtitle: "Authentication, access control, and protection",
+    sectionIDs: [],
+    comingSoon: true,
+  },
+];
 
 export function OverviewPage({
   lessons,
@@ -24,77 +74,100 @@ export function OverviewPage({
   errorMessage,
   onNavigate,
 }: OverviewPageProps) {
-  const sectionSummaries = useMemo(() => {
-    const map = new Map<string, SectionSummary>();
-    for (const lesson of lessons) {
-      const sectionID = lesson.section_id ?? lesson.module;
-      const sectionTitle = lesson.section_title ?? lesson.module;
-      const totalStages = lesson.stages.length;
-      const completedStages = lesson.stages.filter((stage) => stage.completed).length;
-      const existing = map.get(sectionID);
-      if (!existing) {
-        map.set(sectionID, {
-          id: sectionID,
-          title: sectionTitle,
-          lessons: 1,
-          completedStages,
-          totalStages,
-          nextLessonID: lesson.id,
-        });
-        continue;
-      }
-
-      const nextLessonID =
-        existing.nextLessonID === "" && completedStages < totalStages
-          ? lesson.id
-          : existing.nextLessonID;
-
-      map.set(sectionID, {
-        ...existing,
-        lessons: existing.lessons + 1,
-        completedStages: existing.completedStages + completedStages,
-        totalStages: existing.totalStages + totalStages,
-        nextLessonID,
+  const subjectBlocks = useMemo(() => {
+    return OSTEP_SUBJECTS.map((subject): SubjectBlock => {
+      const matchedLessons = lessons.filter((lesson) => {
+        const sectionID = lesson.section_id ?? lesson.module;
+        return subject.sectionIDs.includes(sectionID);
       });
-    }
+      const lessonNodes: LessonNode[] = matchedLessons.map((lesson) => {
+        const completedStages = lesson.stages.filter((stage) => stage.completed).length;
+        const unlockedStages = lesson.stages.filter((stage) => stage.unlocked !== false);
+        const allCompleted = completedStages === lesson.stages.length && lesson.stages.length > 0;
+        const status: LessonNode["status"] = allCompleted
+          ? "passed"
+          : unlockedStages.length === 0
+            ? "locked"
+            : "ready";
+        const firstUnlockedStage = unlockedStages[0]?.index ?? 0;
 
-    return Array.from(map.values()).sort((left, right) => left.id.localeCompare(right.id));
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          status,
+          firstUnlockedStage,
+        };
+      });
+
+      const totalStages = matchedLessons.reduce((sum, lesson) => sum + lesson.stages.length, 0);
+      const completedStages = matchedLessons.reduce(
+        (sum, lesson) => sum + lesson.stages.filter((stage) => stage.completed).length,
+        0,
+      );
+
+      return {
+        id: subject.id,
+        title: subject.title,
+        subtitle: subject.subtitle,
+        locked: subject.comingSoon === true,
+        comingSoon: subject.comingSoon === true,
+        lessonNodes,
+        completedStages,
+        totalStages,
+      };
+    });
   }, [lessons]);
 
   return (
     <section className="panel section-overview-panel">
       <h2>Course Overview</h2>
-      <p className="subtitle">
-        Follow OSTEP sections in order: CPU, Memory, Concurrency, then Persistence.
-      </p>
+      <p className="subtitle">Follow OSTEP subjects from top to bottom.</p>
 
       {isLoading ? <p className="empty">Loading sections...</p> : null}
       {errorMessage ? <p className="error">{errorMessage}</p> : null}
 
       {!isLoading && !errorMessage ? (
-        <div className="section-grid">
-          {sectionSummaries.map((section) => {
+        <div className="subject-stack">
+          {subjectBlocks.map((subject) => {
             const completionRate =
-              section.totalStages > 0
-                ? Math.round((section.completedStages / section.totalStages) * 100)
+              subject.totalStages > 0
+                ? Math.round((subject.completedStages / subject.totalStages) * 100)
                 : 0;
             return (
-              <article key={section.id} className="section-card">
-                <h3>{section.title}</h3>
-                <p className="lesson-outcome">Lessons: {section.lessons}</p>
-                <p className="lesson-outcome">
-                  Progress: {section.completedStages}/{section.totalStages} ({completionRate}%)
-                </p>
-                <div className="control-row">
-                  <button type="button" onClick={() => onNavigate(`/sections/${section.id}`)}>
-                    View Section
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate(`/challenge/${section.nextLessonID}/0`)}
-                  >
-                    Continue
-                  </button>
+              <article
+                key={subject.id}
+                className={
+                  subject.locked
+                    ? `subject-block subject-${subject.id} is-locked`
+                    : `subject-block subject-${subject.id}`
+                }
+              >
+                <div className="subject-header">
+                  <h3>{subject.title}</h3>
+                  {subject.comingSoon ? <span className="badge fail">Coming Soon</span> : null}
+                </div>
+                <p className="lesson-outcome">{subject.subtitle}</p>
+                {subject.totalStages > 0 ? (
+                  <p className="lesson-outcome subject-progress">
+                    Progress: {subject.completedStages}/{subject.totalStages} ({completionRate}%)
+                  </p>
+                ) : (
+                  <p className="lesson-outcome">Lesson nodes will appear here after implementation.</p>
+                )}
+
+                <div className="lesson-node-grid">
+                  {subject.lessonNodes.map((node) => (
+                    <div key={node.id} className="lesson-node-wrap">
+                      <button
+                        type="button"
+                        className={`lesson-node lesson-node--${node.status}`}
+                        disabled={node.status === "locked"}
+                        onClick={() => onNavigate(`/challenge/${node.id}/${node.firstUnlockedStage}`)}
+                        aria-label={node.title}
+                      />
+                      <span className="lesson-node-title">{node.title}</span>
+                    </div>
+                  ))}
                 </div>
               </article>
             );

@@ -416,10 +416,10 @@ func applyChallengeMetadata(lesson *Lesson) {
 
 func applyLessonMetadata(lesson *Lesson) {
 	if lesson.SectionID == "" {
-		lesson.SectionID = lesson.Module
+		lesson.SectionID = defaultSectionID(lesson.Module)
 	}
 	if lesson.SectionTitle == "" {
-		lesson.SectionTitle = defaultSectionTitle(lesson.Module)
+		lesson.SectionTitle = defaultSectionTitle(lesson.SectionID)
 	}
 	if lesson.Difficulty == "" {
 		lesson.Difficulty = defaultDifficulty(lesson.ID)
@@ -432,16 +432,27 @@ func applyLessonMetadata(lesson *Lesson) {
 	}
 }
 
-func defaultSectionTitle(module string) string {
+func defaultSectionID(module string) string {
 	switch module {
-	case "cpu-virtualization":
-		return "CPU Virtualization and Scheduling"
-	case "memory":
-		return "Memory Virtualization"
+	case "cpu-virtualization", "memory":
+		return "virtualization"
 	case "concurrency":
-		return "Concurrency and Interrupts"
+		return "concurrency"
 	case "persistence":
-		return "Persistence and Filesystem"
+		return "persistence"
+	default:
+		return "core"
+	}
+}
+
+func defaultSectionTitle(sectionID string) string {
+	switch sectionID {
+	case "virtualization":
+		return "Virtualization"
+	case "concurrency":
+		return "Concurrency"
+	case "persistence":
+		return "Persistence"
 	default:
 		return "OSTEP Core"
 	}

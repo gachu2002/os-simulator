@@ -4,7 +4,8 @@ React + TypeScript challenge interface for OSTEP lesson-stage workflow.
 
 ```mermaid
 flowchart TB
-  APP[Challenge App] --> CHAL[/challenge]
+  APP[Challenge App] --> OVER[/]
+  OVER --> CHAL[/challenge/:lessonId/:stageIndex]
   CHAL --> LESSON[Lesson Stage Runner]
   CHAL --> CVIZ[Challenge Snapshot]
   CHAL --> VIZ
