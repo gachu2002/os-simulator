@@ -1,0 +1,29 @@
+{
+  "id": "l15b-irq-interleave-order",
+  "difficulty": "advanced",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "threads-intro",
+    "threads-bugs"
+  ],
+  "learn": {
+    "core_idea": "Concurrent asynchronous completions interleave; deterministic ordering still enables reproducible diagnosis.",
+    "mechanism_steps": [
+      "Submit multiple async operations.",
+      "Observe completion events entering event queue.",
+      "Check stable order in deterministic replay.",
+      "Use order evidence to reason about outcomes."
+    ],
+    "worked_example": "Read and write completions may interleave predictably by simulated timing and sequence.",
+    "common_mistakes": [
+      "Expecting arbitrary order under deterministic engine.",
+      "Ignoring sequence numbers/ticks.",
+      "Diagnosing bugs without ordering evidence."
+    ],
+    "pre_challenge_checklist": [
+      "I can trace event order across IRQ completions.",
+      "I can explain why order is stable here.",
+      "I can verify ordered-sequence validator."
+    ]
+  }
+}

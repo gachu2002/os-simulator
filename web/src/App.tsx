@@ -1,27 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { LessonRunnerPanel } from "./components/LessonRunnerPanel";
+import { LessonChallengePage } from "./components/LessonChallengePage";
+import { LessonLearnPage } from "./components/LessonLearnPage";
 import { OverviewPage } from "./components/OverviewPage";
-import { VisualizationSuite } from "./components/VisualizationSuite";
 import { useLessonsCatalog } from "./hooks/useLessonsCatalog";
-import type { ChallengeGradeResponse } from "./lib/lessonApi";
-import type { SnapshotDTO } from "./lib/types";
-import { snapshotFromChallengeGrade } from "./state/lessonSnapshot";
-
-type AppRoute =
-  | { kind: "overview" }
-  | { kind: "challenge"; lessonID?: string; stageIndex?: number };
+import { parseRoute } from "./lib/routes";
 
 export function App() {
   const [baseURL] = useState(defaultBaseURL());
   const [routePath, setRoutePath] = useState(() =>
-    typeof window === "undefined" ? "/" : window.location.pathname,
+    typeof window === "undefined"
+      ? "/"
+      : `${window.location.pathname}${window.location.search}`,
   );
 
-  const [lessonSnapshot, setLessonSnapshot] = useState<SnapshotDTO | null>(null);
-  const [lessonTitle, setLessonTitle] = useState("");
-  const [hasGradedAttempt, setHasGradedAttempt] = useState(false);
-  const { lessons, isLoading, errorMessage } = useLessonsCatalog({ baseURL });
+  const { sections, isLoading, errorMessage } = useLessonsCatalog({ baseURL });
 
   const route = parseRoute(routePath);
 
@@ -30,33 +23,22 @@ export function App() {
       return;
     }
     window.history.pushState({}, "", to);
-    setRoutePath(window.location.pathname);
+    setRoutePath(`${window.location.pathname}${window.location.search}`);
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
-    const handlePopState = () => setRoutePath(window.location.pathname);
+    const handlePopState = () =>
+      setRoutePath(`${window.location.pathname}${window.location.search}`);
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const handleChallengeLiveSnapshot = useCallback((snapshot: SnapshotDTO | null, title: string) => {
-    setLessonSnapshot(snapshot);
-    setLessonTitle(title);
-    setHasGradedAttempt(false);
-  }, []);
-
-  const handleChallengeGradeResult = useCallback((result: ChallengeGradeResponse) => {
-    setLessonSnapshot(snapshotFromChallengeGrade(result));
-    setLessonTitle(`${result.lesson_id} stage ${result.stage_index + 1}`);
-    setHasGradedAttempt(true);
-  }, []);
-
   return (
     <main className="app-shell">
-      {route.kind === "challenge" ? (
+      {route.kind !== "overview" ? (
         <div className="top-nav">
           <button type="button" className="btn btn-ghost" onClick={() => handleNavigate("/")}>
             Home
@@ -75,35 +57,29 @@ export function App() {
 
       {route.kind === "overview" ? (
         <OverviewPage
-          lessons={lessons}
+          sections={sections}
           isLoading={isLoading}
           errorMessage={errorMessage}
           onNavigate={handleNavigate}
         />
       ) : null}
 
-      {route.kind === "challenge" ? (
-        <>
-          <LessonRunnerPanel
-            baseURL={baseURL}
-            onLiveSnapshot={handleChallengeLiveSnapshot}
-            onGradeResult={handleChallengeGradeResult}
-            preferredLessonID={route.lessonID}
-            preferredStageIndex={route.stageIndex}
-          />
+      {route.kind === "learn" ? (
+        <LessonLearnPage
+          baseURL={baseURL}
+          lessonID={route.lessonID}
+          preferredStageIndex={route.stageIndex}
+          onNavigate={handleNavigate}
+        />
+      ) : null}
 
-          <VisualizationSuite
-            title="Lesson Stage Snapshot"
-            subtitle={
-              lessonSnapshot
-                ? hasGradedAttempt
-                  ? `Latest graded result: ${lessonTitle}`
-                  : `Live lesson stage attempt: ${lessonTitle}`
-                : "Start a lesson stage to render scheduler, memory, and process views"
-            }
-            snapshot={lessonSnapshot}
-          />
-        </>
+      {route.kind === "challenge" ? (
+        <LessonChallengePage
+          baseURL={baseURL}
+          lessonID={route.lessonID}
+          stageIndex={route.stageIndex}
+          onNavigate={handleNavigate}
+        />
       ) : null}
     </main>
   );
@@ -118,28 +94,4 @@ function defaultBaseURL(): string {
     return "http://localhost:8080";
   }
   return window.location.origin;
-}
-
-function parseRoute(pathname: string): AppRoute {
-  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  if (normalized === "/") {
-    return { kind: "overview" };
-  }
-
-  const challengePrefix = "/challenge/";
-  if (normalized.startsWith(challengePrefix)) {
-    const parts = normalized.slice(challengePrefix.length).split("/");
-    const lessonID = decodeURIComponent(parts[0] ?? "").trim();
-    if (lessonID === "") {
-      return { kind: "overview" };
-    }
-    const parsedStage = Number(parts[1]);
-    return {
-      kind: "challenge",
-      lessonID,
-      stageIndex: Number.isFinite(parsedStage) ? parsedStage : 0,
-    };
-  }
-
-  return { kind: "overview" };
 }

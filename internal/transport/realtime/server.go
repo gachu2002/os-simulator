@@ -65,9 +65,10 @@ func (s *Server) lessonEngineForLearner(learnerID string) *lessons.Engine {
 func (s *Server) Handler() http.Handler {
 	router := chi.NewRouter()
 	router.HandleFunc("/healthz", s.handleHealth)
-	router.HandleFunc("/lessons", s.handleLessons)
+	router.HandleFunc("/curriculum", s.handleCurriculum)
+	router.HandleFunc("/lessons/{lessonID}/learn", s.handleLessonLearn)
 	router.HandleFunc("/challenges/start", s.handleChallengeStart)
-	router.HandleFunc("/challenges/grade", s.handleChallengeGrade)
+	router.HandleFunc("/challenges/submit", s.handleChallengeSubmit)
 	router.HandleFunc("/ws/{id}", s.handleWS)
 	return withRequestID(withCORS(s.origins, router))
 }

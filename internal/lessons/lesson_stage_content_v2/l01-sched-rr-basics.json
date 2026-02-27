@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l01-sched-rr-basics",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe RR dispatch/compute alternation in trace output.",
+      "goal": "Show that both runnable jobs receive time slices before completion.",
+      "theory_detail": "RR fairness evidence comes from repeated dispatch rotation under fixed quantum.",
+      "hints": {
+        "nudge": "Check dispatch order first.",
+        "concept": "RR fairness appears as alternating service opportunities.",
+        "explicit": "Run enough steps to capture multiple dispatch events and compare p1/p2 cadence."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether RR trace behavior still yields full completion.",
+      "goal": "Pass both trace and completion checks under default RR config.",
+      "hints": {
+        "nudge": "Do not stop at trace-only evidence.",
+        "concept": "Scheduling quality requires both mechanism evidence and completion outcome.",
+        "explicit": "Continue until completed_processes reaches 2, then submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply RR tuning and verify behavior remains correct.",
+      "goal": "Tune policy/quantum within limits while preserving completion and trace checks.",
+      "hints": {
+        "nudge": "Use one policy change at a time.",
+        "concept": "Tuning changes cadence, not correctness obligations.",
+        "explicit": "Apply policy update, rerun, then verify trace and completed_processes together."
+      }
+    }
+  ]
+}

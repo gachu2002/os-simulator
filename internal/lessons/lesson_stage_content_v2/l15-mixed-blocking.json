@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l15-mixed-blocking",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe mixed I/O and sleep blocking transitions.",
+      "goal": "Identify all block and wakeup paths in one run.",
+      "theory_detail": "Mixed blocking workloads require reasoning about multiple unblock sources (timer and device).",
+      "hints": {
+        "nudge": "Tag each block cause in trace.",
+        "concept": "Progress depends on correctly handling every blocking source.",
+        "explicit": "List each block event and matching wakeup event before submit."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose liveness in mixed-blocking scenario.",
+      "goal": "Pass wakeup and completion checks in combined workload.",
+      "hints": {
+        "nudge": "Check that execution resumes after each wakeup.",
+        "concept": "One missed resume can prevent final completion.",
+        "explicit": "Run until all block phases are resolved and completion metric reaches target."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune timings and preserve mixed-workload correctness.",
+      "goal": "Apply bounded config changes and keep all validators passing.",
+      "hints": {
+        "nudge": "Retest after each tuning change.",
+        "concept": "Mixed workloads are sensitive to timing; validate full path each time.",
+        "explicit": "Apply one latency change, rerun full workload, then verify trace and completion checks."
+      }
+    }
+  ]
+}

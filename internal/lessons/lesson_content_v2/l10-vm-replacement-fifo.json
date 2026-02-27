@@ -1,0 +1,28 @@
+{
+  "id": "l10-vm-replacement-fifo",
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "vm-paging"
+  ],
+  "learn": {
+    "core_idea": "FIFO page replacement evicts the oldest resident page regardless of recent usage.",
+    "mechanism_steps": [
+      "Frames fill in arrival order.",
+      "New fault with full memory triggers eviction.",
+      "Oldest resident page is removed.",
+      "New page is inserted as newest resident."
+    ],
+    "worked_example": "Accessing a third page with two frames evicts first-loaded page under FIFO.",
+    "common_mistakes": [
+      "Expecting recency-aware eviction.",
+      "Mixing FIFO with LRU intuition.",
+      "Failing to track load order."
+    ],
+    "pre_challenge_checklist": [
+      "I can list resident pages by load order.",
+      "I can predict FIFO victim page.",
+      "I can match victim logic to observed faults."
+    ]
+  }
+}

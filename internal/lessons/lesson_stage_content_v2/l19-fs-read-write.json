@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l19-fs-read-write",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe mixed read/write operation order in filesystem trace.",
+      "goal": "Verify both operation classes execute through required path/mapping flow.",
+      "theory_detail": "Mixed I/O sequences require preserving correct order while maintaining mapping correctness.",
+      "hints": {
+        "nudge": "Track read then write phases separately.",
+        "concept": "Mixed workflows fail when one phase omits required implementation steps.",
+        "explicit": "Annotate trace by phase and verify fs.path + fs.blockmap coverage."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose mixed-sequence outcome and completion.",
+      "goal": "Pass trace and completion checks for the full mixed sequence.",
+      "hints": {
+        "nudge": "Confirm all operations complete.",
+        "concept": "Partial sequence success is insufficient for mixed workload correctness.",
+        "explicit": "Run through final syscall exit and verify required trace events before submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune scenario settings and keep mixed-sequence correctness intact.",
+      "goal": "Use bounded edits while preserving all required validators.",
+      "hints": {
+        "nudge": "Avoid multiple simultaneous changes.",
+        "concept": "Single-change experiments isolate regressions faster.",
+        "explicit": "Apply one tune, rerun from reset, then validate trace+completion checks."
+      }
+    }
+  ]
+}

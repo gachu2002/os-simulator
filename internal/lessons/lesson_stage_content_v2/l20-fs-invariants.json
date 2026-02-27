@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l20-fs-invariants",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe filesystem operation flow before invariant validation.",
+      "goal": "Identify trace evidence needed to justify invariant expectations.",
+      "theory_detail": "Invariant checks validate correctness beyond simple process completion.",
+      "hints": {
+        "nudge": "Prepare evidence before checking fs_ok.",
+        "concept": "A run can complete and still violate invariants.",
+        "explicit": "Verify path/mapping flow, then inspect fs_ok outcome."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose invariant pass/fail causes from trace and outputs.",
+      "goal": "Pass fs_ok and required companion checks.",
+      "hints": {
+        "nudge": "Focus on fs_ok first.",
+        "concept": "Invariant failures indicate correctness bugs, not performance variance.",
+        "explicit": "Reset, rerun carefully, and submit only when fs_ok and completion both pass."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning while preserving invariant correctness.",
+      "goal": "Keep fs_ok true under bounded tuning edits.",
+      "hints": {
+        "nudge": "Retest invariants after each change.",
+        "concept": "Correct systems preserve invariants across timing variation.",
+        "explicit": "Apply one change, rerun full workload, and verify fs_ok before submit."
+      }
+    }
+  ]
+}

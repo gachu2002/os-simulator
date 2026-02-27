@@ -1,0 +1,29 @@
+{
+  "id": "l12-irq-wakeup-read",
+  "difficulty": "foundation",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "threads-intro",
+    "file-devices"
+  ],
+  "learn": {
+    "core_idea": "Blocking I/O hands off progress to device completion interrupts that wake sleeping processes.",
+    "mechanism_steps": [
+      "Read syscall traps into kernel.",
+      "Kernel submits async device request.",
+      "Process transitions to blocked.",
+      "IRQ completion wakes process and returns control."
+    ],
+    "worked_example": "Trace shows trap.enter -> io.submit -> proc.wakeup -> trap.return before further compute.",
+    "common_mistakes": [
+      "Expecting blocked process to keep computing.",
+      "Confusing wakeup with immediate user-mode execution.",
+      "Ignoring interrupt ordering in trace."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify io.submit and proc.wakeup.",
+      "I can explain why wakeup is required for progress.",
+      "I can verify trap return after completion."
+    ]
+  }
+}

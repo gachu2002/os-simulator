@@ -9,13 +9,15 @@ pnpm --dir=web install
 pnpm --dir=web run dev
 ```
 
-By default in dev, the app uses same-origin API calls and Vite proxies `/lessons`, `/challenges`, and `/ws` to `http://127.0.0.1:8080`.
+By default in dev, the app uses same-origin API calls and Vite proxies `/curriculum`, `/lessons/{lessonID}/learn`, `/challenges`, and `/ws` to `http://127.0.0.1:8080`.
 
 ## UI Modes
 
-- `/challenge`: lesson-stage workflow (`learn -> exercise -> check`) with deterministic grading and hint feedback
+- `/`: section-first course overview
+- `/lesson/:lessonId/learn`: theory-only lesson page
+- `/lesson/:lessonId/challenge`: challenge page (`actions -> visualization -> goal + submit`)
 
-Challenge mode runs focused OSTEP lesson stages.
+Challenge mode runs focused OSTEP lesson challenges.
 
 ## Verification
 

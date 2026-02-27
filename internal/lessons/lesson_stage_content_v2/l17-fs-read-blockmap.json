@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l17-fs-read-blockmap",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe block mapping for read operations.",
+      "goal": "Verify fs.path and fs.blockmap events in proper progression.",
+      "theory_detail": "Read requests require metadata lookup to map logical offsets to physical blocks.",
+      "hints": {
+        "nudge": "Find fs.blockmap entries after open.",
+        "concept": "Mapping events demonstrate implementation path, not just syscall success.",
+        "explicit": "Run until both fs.path and fs.blockmap appear for read request."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose read mapping evidence and completion.",
+      "goal": "Pass mapping trace checks with successful run completion.",
+      "hints": {
+        "nudge": "Inspect mapping for each read chunk.",
+        "concept": "Missing mapping evidence means the implementation path is incomplete.",
+        "explicit": "Rerun from reset and verify full path+blockmap coverage before submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune environment and keep read mapping checks stable.",
+      "goal": "Preserve mapping and completion checks after config changes.",
+      "hints": {
+        "nudge": "Change one setting and retest.",
+        "concept": "Performance tuning should not remove mapping correctness evidence.",
+        "explicit": "Apply one latency/config change, rerun, and verify all validators."
+      }
+    }
+  ]
+}

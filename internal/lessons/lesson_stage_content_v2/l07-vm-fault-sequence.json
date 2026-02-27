@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l07-vm-fault-sequence",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe fault and access traces for first-touch page references.",
+      "goal": "Identify where not-present faults occur in the fixed access sequence.",
+      "theory_detail": "New virtual pages fault when absent from frames; trace should show mem.fault before successful mem.access.",
+      "hints": {
+        "nudge": "List each ACCESS in order.",
+        "concept": "Fault count is determined by residency state at each reference.",
+        "explicit": "Mark each access as hit or not-present fault, then compare against trace."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose exact not-present fault count for the scenario.",
+      "goal": "Match expected not-present counter exactly.",
+      "hints": {
+        "nudge": "Count faults from counters and trace together.",
+        "concept": "Exact fault validators require step-by-step mapping, not approximation.",
+        "explicit": "Reset, rerun, and recalculate per access until fault_eq passes."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning while preserving expected fault constraints.",
+      "goal": "Use allowed config changes and keep all checks passing.",
+      "hints": {
+        "nudge": "Change one config value at a time.",
+        "concept": "Capacity changes can reduce faults but should not invalidate required behavior.",
+        "explicit": "Adjust config once, rerun full sequence, and verify fault + trace checks."
+      }
+    }
+  ]
+}

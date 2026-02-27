@@ -1,0 +1,29 @@
+{
+  "id": "l20b-fs-latency-compare",
+  "difficulty": "advanced",
+  "estimated_minutes": 22,
+  "chapter_refs": [
+    "file-devices",
+    "file-integrity"
+  ],
+  "learn": {
+    "core_idea": "Latency tuning changes timing but should not violate correctness invariants.",
+    "mechanism_steps": [
+      "Run baseline with default latencies.",
+      "Apply bounded latency change.",
+      "Compare trace timing differences.",
+      "Confirm fs_ok and completion still hold."
+    ],
+    "worked_example": "Disk/terminal delays alter when events occur, not whether invariants pass.",
+    "common_mistakes": [
+      "Treating slower run as incorrect run.",
+      "Missing config-change budget limits.",
+      "Forgetting to compare against baseline."
+    ],
+    "pre_challenge_checklist": [
+      "I can apply latency config commands.",
+      "I can compare before/after timing.",
+      "I can verify fs_ok remains true."
+    ]
+  }
+}

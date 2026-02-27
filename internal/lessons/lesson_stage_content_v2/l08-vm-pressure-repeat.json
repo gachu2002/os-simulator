@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l08-vm-pressure-repeat",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe repeated-access behavior under tight frame pressure.",
+      "goal": "Explain why revisited pages may still fault.",
+      "theory_detail": "When working set exceeds frame capacity, earlier pages are evicted and can fault again on revisit.",
+      "hints": {
+        "nudge": "Track frame capacity against unique pages.",
+        "concept": "Repetition does not guarantee hits if eviction has occurred.",
+        "explicit": "Map each access to likely resident set before checking counters."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose pressure-driven fault totals.",
+      "goal": "Pass exact fault count and trace evidence checks.",
+      "hints": {
+        "nudge": "Use both trace and fault counters.",
+        "concept": "Pressure scenarios are deterministic for a fixed sequence and frame count.",
+        "explicit": "Recompute expected not-present count and compare to observed value."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune capacity to reduce pressure effects.",
+      "goal": "Improve fault profile while preserving required trace behavior.",
+      "hints": {
+        "nudge": "Increase capacity minimally.",
+        "concept": "Small capacity gains can shrink repeated fault windows.",
+        "explicit": "Apply one change, rerun, and validate lte fault condition plus trace checks."
+      }
+    }
+  ]
+}

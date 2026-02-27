@@ -119,6 +119,20 @@ func TestErrorEnvelopeIncludesRequestID(t *testing.T) {
 	}
 }
 
+func TestLegacyChallengeGradeEndpointRemoved(t *testing.T) {
+	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
+	defer ts.Close()
+
+	resp, err := http.Post(ts.URL+"/challenges/grade", "application/json", bytes.NewReader([]byte(`{"attempt_id":"a-1"}`)))
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
 func startChallengeSession(t *testing.T, baseURL, learnerID string) ChallengeStartResponse {
 	t.Helper()
 	b, err := json.Marshal(map[string]any{

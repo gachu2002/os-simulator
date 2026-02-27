@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l10-vm-replacement-fifo",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe FIFO replacement behavior during frame overflow.",
+      "goal": "Identify the eviction victim implied by load order.",
+      "theory_detail": "FIFO evicts oldest resident page first, independent of recent usage.",
+      "hints": {
+        "nudge": "Track insertion order of resident pages.",
+        "concept": "FIFO differs from recency-based replacement policies.",
+        "explicit": "Write down frame load order before overflow access and predict victim."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose replacement outcome and fault totals.",
+      "goal": "Pass exact fault and trace checks using FIFO reasoning.",
+      "hints": {
+        "nudge": "Re-check access and eviction sequence.",
+        "concept": "Wrong victim reasoning usually causes fault-count mismatch.",
+        "explicit": "Recompute faults from FIFO victim path and compare to output."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning and verify replacement constraints still hold.",
+      "goal": "Use allowed config controls and keep replacement checks satisfied.",
+      "hints": {
+        "nudge": "Tune capacity carefully.",
+        "concept": "Capacity changes alter pressure but replacement mechanism remains deterministic.",
+        "explicit": "Apply one config change, rerun, and verify all required validators."
+      }
+    }
+  ]
+}

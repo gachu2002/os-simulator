@@ -1,0 +1,29 @@
+{
+  "id": "l11-vm-mixed-access",
+  "difficulty": "intermediate",
+  "estimated_minutes": 18,
+  "chapter_refs": [
+    "vm-mechanism",
+    "vm-paging"
+  ],
+  "learn": {
+    "core_idea": "Read and write accesses share translation path but interact with protection and residency checks.",
+    "mechanism_steps": [
+      "Translate virtual page to frame mapping.",
+      "Verify access mode and mapping validity.",
+      "Handle faults when mapping absent.",
+      "Record access outcome in memory trace."
+    ],
+    "worked_example": "Mixed r/w sequence produces deterministic access and fault evidence.",
+    "common_mistakes": [
+      "Ignoring access mode when debugging results.",
+      "Treating all failures as not-present faults.",
+      "Skipping trace-based reasoning."
+    ],
+    "pre_challenge_checklist": [
+      "I can parse ACCESS r/w steps.",
+      "I can predict not-present count.",
+      "I can verify with trace and counters."
+    ]
+  }
+}

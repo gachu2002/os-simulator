@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l18-fs-write-blockmap",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe write-path mapping behavior.",
+      "goal": "Confirm write syscall flow includes required mapping events.",
+      "theory_detail": "Write path uses resolved metadata and block mapping before completion.",
+      "hints": {
+        "nudge": "Check sys.write plus fs.blockmap together.",
+        "concept": "Write correctness requires both syscall and mapping evidence.",
+        "explicit": "Run until write-related mapping events are visible, then verify order."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose write mapping correctness with outcome checks.",
+      "goal": "Pass trace mapping and completion requirements.",
+      "hints": {
+        "nudge": "Include completion check.",
+        "concept": "Mapping evidence is necessary but completion still must succeed.",
+        "explicit": "Continue execution until completion metric reaches target and submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning while preserving write-path correctness.",
+      "goal": "Keep mapping and completion validators green after changes.",
+      "hints": {
+        "nudge": "Retest after every tuning action.",
+        "concept": "Timing or config tuning should not alter correctness obligations.",
+        "explicit": "Apply one allowed change, rerun full workload, verify checks, then submit."
+      }
+    }
+  ]
+}

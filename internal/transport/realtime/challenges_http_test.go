@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestChallengeStartAndGradeLifecycle(t *testing.T) {
+func TestChallengeStartAndSubmitLifecycle(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
@@ -34,9 +34,9 @@ func TestChallengeStartAndGradeLifecycle(t *testing.T) {
 		t.Fatalf("expected challenge max steps")
 	}
 
-	firstGrade := gradeChallenge(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID})
-	if firstGrade.Passed {
-		t.Fatalf("expected first grade to fail without interaction")
+	firstSubmit := submitChallenge(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID})
+	if firstSubmit.Passed {
+		t.Fatalf("expected first submit to fail without interaction")
 	}
 
 	conn := dialChallengeWS(t, ts.URL, startRes.SessionID)
@@ -46,16 +46,26 @@ func TestChallengeStartAndGradeLifecycle(t *testing.T) {
 	mustWriteCommand(t, conn, Command{Name: "step", Count: 8})
 	_ = mustReadEvent(t, conn)
 
-	secondGrade := gradeChallenge(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID})
-	if !secondGrade.Passed {
-		t.Fatalf("expected second grade to pass, feedback=%s", secondGrade.FeedbackKey)
+	secondSubmit := submitChallenge(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID})
+	if !secondSubmit.Passed {
+		t.Fatalf("expected second submit to pass, feedback=%s", secondSubmit.FeedbackKey)
 	}
-	if secondGrade.Output.TraceHash == "" {
+	if len(secondSubmit.PassConditions) == 0 {
+		t.Fatalf("expected pass conditions in submit response")
+	}
+	if len(secondSubmit.ValidatorResults) == 0 {
+		t.Fatalf("expected validator results in submit response")
+	}
+	firstValidator := secondSubmit.ValidatorResults[0]
+	if firstValidator.Expected == "" || firstValidator.Actual == "" {
+		t.Fatalf("expected validator result to include expected/actual values")
+	}
+	if secondSubmit.Output.TraceHash == "" {
 		t.Fatalf("expected trace hash")
 	}
 }
 
-func TestChallengeStartAndGradeValidationErrors(t *testing.T) {
+func TestChallengeStartAndSubmitValidationErrors(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
@@ -65,10 +75,10 @@ func TestChallengeStartAndGradeValidationErrors(t *testing.T) {
 		t.Fatalf("start status=%d want=%d", resp.StatusCode, http.StatusBadRequest)
 	}
 
-	missing := gradeChallengeRaw(t, ts.URL, ChallengeGradeRequest{AttemptID: "a-999999"})
+	missing := submitChallengeRaw(t, ts.URL, ChallengeGradeRequest{AttemptID: "a-999999"})
 	defer func() { _ = missing.Body.Close() }()
 	if missing.StatusCode != http.StatusNotFound {
-		t.Fatalf("grade status=%d want=%d", missing.StatusCode, http.StatusNotFound)
+		t.Fatalf("submit status=%d want=%d", missing.StatusCode, http.StatusNotFound)
 	}
 }
 
@@ -131,7 +141,7 @@ func TestChallengeAttemptIsScopedToLearner(t *testing.T) {
 		LearnerID:  "learner-a",
 	})
 
-	resp := gradeChallengeRaw(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID, LearnerID: "learner-b"})
+	resp := submitChallengeRaw(t, ts.URL, ChallengeGradeRequest{AttemptID: startRes.AttemptID, LearnerID: "learner-b"})
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusForbidden)
@@ -152,23 +162,23 @@ func startChallenge(t *testing.T, baseURL string, req ChallengeStartRequest) Cha
 	return out
 }
 
-func gradeChallenge(t *testing.T, baseURL string, req ChallengeGradeRequest) ChallengeGradeResponse {
+func submitChallenge(t *testing.T, baseURL string, req ChallengeGradeRequest) ChallengeGradeResponse {
 	t.Helper()
-	resp := gradeChallengeRaw(t, baseURL, req)
+	resp := submitChallengeRaw(t, baseURL, req)
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusOK)
 	}
 	var out ChallengeGradeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		t.Fatalf("decode grade response failed: %v", err)
+		t.Fatalf("decode submit response failed: %v", err)
 	}
 	return out
 }
 
-func gradeChallengeRaw(t *testing.T, baseURL string, req ChallengeGradeRequest) *http.Response {
+func submitChallengeRaw(t *testing.T, baseURL string, req ChallengeGradeRequest) *http.Response {
 	t.Helper()
-	return postJSON(t, baseURL+"/challenges/grade", req)
+	return postJSON(t, baseURL+"/challenges/submit", req)
 }
 
 func postJSON(t *testing.T, url string, payload any) *http.Response {

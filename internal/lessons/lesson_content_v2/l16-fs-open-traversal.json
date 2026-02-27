@@ -1,0 +1,29 @@
+{
+  "id": "l16-fs-open-traversal",
+  "difficulty": "foundation",
+  "estimated_minutes": 18,
+  "chapter_refs": [
+    "file-intro",
+    "file-implementation"
+  ],
+  "learn": {
+    "core_idea": "File access begins with path traversal from namespace components to a target inode.",
+    "mechanism_steps": [
+      "Open syscall receives absolute path.",
+      "Kernel traverses directory hierarchy.",
+      "Resolved inode/descriptor returned.",
+      "Subsequent I/O uses resolved handle."
+    ],
+    "worked_example": "Trace emits fs.path details before read operations proceed.",
+    "common_mistakes": [
+      "Expecting read before successful open.",
+      "Ignoring path traversal evidence.",
+      "Assuming descriptor exists without resolution."
+    ],
+    "pre_challenge_checklist": [
+      "I can verify fs.path event appears.",
+      "I can explain open-before-read ordering.",
+      "I can inspect traversal details in trace."
+    ]
+  }
+}

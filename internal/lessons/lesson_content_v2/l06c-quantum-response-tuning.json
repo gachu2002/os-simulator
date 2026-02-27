@@ -1,0 +1,28 @@
+{
+  "id": "l06c-quantum-response-tuning",
+  "difficulty": "advanced",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "cpu-sched"
+  ],
+  "learn": {
+    "core_idea": "Practical scheduling uses policy and quantum tuning to hit service-level goals under limits.",
+    "mechanism_steps": [
+      "Start from baseline policy.",
+      "Adjust quantum incrementally.",
+      "Validate response/completion constraints.",
+      "Stop when goals met within change budget."
+    ],
+    "worked_example": "A single tuning pass can satisfy response target if workload balance is moderate.",
+    "common_mistakes": [
+      "Over-tuning beyond allowed policy changes.",
+      "Submitting before confirming all checks.",
+      "Ignoring trace evidence while watching metrics only."
+    ],
+    "pre_challenge_checklist": [
+      "I know the tuning budget.",
+      "I can identify target metrics.",
+      "I can explain why chosen quantum should work."
+    ]
+  }
+}

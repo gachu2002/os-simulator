@@ -1,0 +1,29 @@
+{
+  "id": "l20c-fs-trace-audit",
+  "difficulty": "advanced",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "file-dialogue",
+    "file-integrity"
+  ],
+  "learn": {
+    "core_idea": "Auditability means proving correctness from trace evidence, not only final pass/fail status.",
+    "mechanism_steps": [
+      "Execute longer mixed operation sequence.",
+      "Collect path/mapping and syscall evidence.",
+      "Verify invariant and completion checks.",
+      "Explain pass outcome from concrete trace facts."
+    ],
+    "worked_example": "A successful audit run includes required trace events plus fs_ok and completion.",
+    "common_mistakes": [
+      "Claiming correctness without event evidence.",
+      "Ignoring missing required trace segments.",
+      "Relying on one panel instead of full evidence."
+    ],
+    "pre_challenge_checklist": [
+      "I can list required events before submit.",
+      "I can verify fs_ok and completion together.",
+      "I can explain why run should pass."
+    ]
+  }
+}

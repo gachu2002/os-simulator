@@ -188,6 +188,46 @@ func TestHintProgressionLevels(t *testing.T) {
 	}
 }
 
+func TestValidatorSpecificHintsOverrideStageHints(t *testing.T) {
+	e := NewEngine()
+	e.catalog["validator-hint"] = Lesson{
+		ID:    "validator-hint",
+		Title: "Validator Hint Lesson",
+		Stages: []Stage{{
+			ID:       "s1",
+			Title:    "validator hint stage",
+			Config:   SimConfig{Seed: 2, Policy: "rr", Quantum: 2, Frames: 8, TLBEntries: 4, DiskLatency: 3, TerminalLatency: 1},
+			Commands: []sim.Command{{Name: "step", Count: 1}},
+			Validators: []ValidatorSpec{
+				{Name: "trace-required", Type: "trace_contains_all", Values: []string{"proc.dispatch", "proc.compute", "never.happens"}},
+				{Name: "completion", Type: "metric_eq", Key: "completed_processes", Number: 1},
+			},
+			Hints: HintSet{Nudge: "stage-nudge", Concept: "stage-concept", Explicit: "stage-explicit"},
+			ValidatorHints: []ValidatorHint{{
+				Validator: "trace-required",
+				Hints:     HintSet{Nudge: "validator-nudge", Concept: "validator-concept", Explicit: "validator-explicit"},
+			}},
+		}},
+	}
+
+	r1, _ := e.RunStage("validator-hint", 0)
+	r2, _ := e.RunStage("validator-hint", 0)
+	r3, _ := e.RunStage("validator-hint", 0)
+
+	if r1.Passed || r2.Passed || r3.Passed {
+		t.Fatalf("validator-hint lesson should not pass")
+	}
+	if r1.Hint != "validator-nudge" || r1.HintLevel != 1 {
+		t.Fatalf("attempt1 validator hint mismatch: level=%d hint=%q", r1.HintLevel, r1.Hint)
+	}
+	if r2.Hint != "validator-concept" || r2.HintLevel != 2 {
+		t.Fatalf("attempt2 validator hint mismatch: level=%d hint=%q", r2.HintLevel, r2.Hint)
+	}
+	if r3.Hint != "validator-explicit" || r3.HintLevel != 3 {
+		t.Fatalf("attempt3 validator hint mismatch: level=%d hint=%q", r3.HintLevel, r3.Hint)
+	}
+}
+
 func contains(items []string, target string) bool {
 	for _, item := range items {
 		if item == target {

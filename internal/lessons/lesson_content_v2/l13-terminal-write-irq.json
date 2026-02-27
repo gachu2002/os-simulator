@@ -1,0 +1,29 @@
+{
+  "id": "l13-terminal-write-irq",
+  "difficulty": "intermediate",
+  "estimated_minutes": 18,
+  "chapter_refs": [
+    "threads-intro",
+    "file-devices"
+  ],
+  "learn": {
+    "core_idea": "Asynchronous terminal writes also rely on IRQ completion to unblock and continue execution.",
+    "mechanism_steps": [
+      "Write syscall dispatches to kernel path.",
+      "Kernel queues terminal device operation.",
+      "Process blocks until device completion.",
+      "IRQ wakeup restores runnable state and returns."
+    ],
+    "worked_example": "sys.write appears before wakeup and final completion metrics reach target.",
+    "common_mistakes": [
+      "Treating write as always synchronous.",
+      "Missing block/wakeup transitions.",
+      "Checking only end state without event path."
+    ],
+    "pre_challenge_checklist": [
+      "I can find sys.write trace events.",
+      "I can verify wakeup after device completion.",
+      "I can confirm process exits successfully."
+    ]
+  }
+}

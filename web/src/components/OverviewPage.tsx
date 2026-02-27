@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 
-import type { LessonSummary } from "../lib/lessonApi";
+import type { CurriculumSection } from "../lib/lessonApi";
 
 interface OverviewPageProps {
-  lessons: LessonSummary[];
+  sections: CurriculumSection[];
   isLoading: boolean;
   errorMessage: string;
   onNavigate: (to: string) => void;
@@ -27,59 +27,15 @@ interface SubjectBlock {
   totalStages: number;
 }
 
-const OSTEP_SUBJECTS: Array<{
-  id: string;
-  title: string;
-  subtitle: string;
-  sectionIDs: string[];
-  comingSoon?: boolean;
-}> = [
-  {
-    id: "introduction",
-    title: "Introduction",
-    subtitle: "OSTEP setup and foundational framing",
-    sectionIDs: [],
-    comingSoon: true,
-  },
-  {
-    id: "virtualization",
-    title: "Virtualization",
-    subtitle: "CPU and memory virtualization lessons",
-    sectionIDs: ["virtualization"],
-  },
-  {
-    id: "concurrency",
-    title: "Concurrency",
-    subtitle: "Threads, wakeups, and interrupt-driven progress",
-    sectionIDs: ["concurrency"],
-  },
-  {
-    id: "persistence",
-    title: "Persistence",
-    subtitle: "Storage and filesystem correctness",
-    sectionIDs: ["persistence"],
-  },
-  {
-    id: "security",
-    title: "Security",
-    subtitle: "Authentication, access control, and protection",
-    sectionIDs: [],
-    comingSoon: true,
-  },
-];
-
 export function OverviewPage({
-  lessons,
+  sections,
   isLoading,
   errorMessage,
   onNavigate,
 }: OverviewPageProps) {
   const subjectBlocks = useMemo(() => {
-    return OSTEP_SUBJECTS.map((subject): SubjectBlock => {
-      const matchedLessons = lessons.filter((lesson) => {
-        const sectionID = lesson.section_id ?? lesson.module;
-        return subject.sectionIDs.includes(sectionID);
-      });
+    return sections.map((section): SubjectBlock => {
+      const matchedLessons = section.lessons ?? [];
       const lessonNodes: LessonNode[] = matchedLessons.map((lesson) => {
         const completedStages = lesson.stages.filter((stage) => stage.completed).length;
         const unlockedStages = lesson.stages.filter((stage) => stage.unlocked !== false);
@@ -106,17 +62,17 @@ export function OverviewPage({
       );
 
       return {
-        id: subject.id,
-        title: subject.title,
-        subtitle: subject.subtitle,
-        locked: subject.comingSoon === true,
-        comingSoon: subject.comingSoon === true,
+        id: section.id,
+        title: section.title,
+        subtitle: section.subtitle ?? "",
+        locked: section.coming_soon,
+        comingSoon: section.coming_soon,
         lessonNodes,
-        completedStages,
-        totalStages,
+        completedStages: section.completed_stages ?? completedStages,
+        totalStages: section.total_stages ?? totalStages,
       };
     });
-  }, [lessons]);
+  }, [sections]);
 
   return (
     <section className="panel section-overview-panel">
@@ -162,7 +118,7 @@ export function OverviewPage({
                         type="button"
                         className={`lesson-node lesson-node--${node.status}`}
                         disabled={node.status === "locked"}
-                        onClick={() => onNavigate(`/challenge/${node.id}/${node.firstUnlockedStage}`)}
+                        onClick={() => onNavigate(`/lesson/${node.id}/learn?stage=${node.firstUnlockedStage}`)}
                         aria-label={node.title}
                       />
                       <span className="lesson-node-title">{node.title}</span>

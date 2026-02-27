@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l15b-irq-interleave-order",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe ordering of multiple async completion events.",
+      "goal": "Identify stable interrupt interleave in deterministic trace.",
+      "theory_detail": "Even asynchronous completions follow deterministic ordering under fixed simulation seed and event rules.",
+      "hints": {
+        "nudge": "Compare event ticks and sequence order.",
+        "concept": "Deterministic interleave enables reproducible debugging.",
+        "explicit": "Capture ordered event chain and verify against required order checks."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether observed interleave still satisfies progress checks.",
+      "goal": "Pass ordering/frequency checks while maintaining completion.",
+      "hints": {
+        "nudge": "Check both order and outcome.",
+        "concept": "Correct ordering alone is insufficient without final progress.",
+        "explicit": "Run full scenario and validate ordering plus completion metrics."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning and verify interleave constraints remain valid.",
+      "goal": "Use allowed tuning to preserve deterministic interleave expectations.",
+      "hints": {
+        "nudge": "Adjust timing gradually.",
+        "concept": "Timing changes can shift spacing but should preserve required ordering rules.",
+        "explicit": "Apply one latency change and rerun until order/count checks pass."
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "l05-throughput-shared-cpu",
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "cpu-sched"
+  ],
+  "learn": {
+    "core_idea": "Throughput captures completed work over time and can conflict with fairness and latency goals.",
+    "mechanism_steps": [
+      "Run bounded workload.",
+      "Measure completions per time window.",
+      "Compare policy impact on throughput.",
+      "Validate fairness floor is still acceptable."
+    ],
+    "worked_example": "Policies with fewer switches can improve throughput for CPU-heavy workloads but harm response.",
+    "common_mistakes": [
+      "Maximizing one metric and ignoring others.",
+      "Reading throughput without checking completed count.",
+      "Assuming fairness and throughput always align."
+    ],
+    "pre_challenge_checklist": [
+      "I can read throughput_per_100_ticks.",
+      "I can verify completion and fairness together.",
+      "I can justify policy choice from data."
+    ]
+  }
+}

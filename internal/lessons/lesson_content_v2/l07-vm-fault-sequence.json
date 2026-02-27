@@ -1,0 +1,29 @@
+{
+  "id": "l07-vm-fault-sequence",
+  "difficulty": "foundation",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "vm-intro",
+    "vm-paging"
+  ],
+  "learn": {
+    "core_idea": "Page faults happen when a referenced virtual page is not resident in physical memory.",
+    "mechanism_steps": [
+      "Access issues virtual address reference.",
+      "Translation checks resident mapping.",
+      "Not-present fault triggers page fill.",
+      "Access retries and succeeds."
+    ],
+    "worked_example": "First touches to unique pages fault; repeated touch may hit if page still resident.",
+    "common_mistakes": [
+      "Counting accesses instead of unique pressure points.",
+      "Ignoring eviction between repeated references.",
+      "Assuming every access faults."
+    ],
+    "pre_challenge_checklist": [
+      "I can count not-present faults from sequence.",
+      "I can map fault to access order.",
+      "I can verify with memory fault counters."
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l20b-fs-latency-compare",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe baseline persistence behavior before latency tuning.",
+      "goal": "Capture baseline evidence for timing and correctness checks.",
+      "theory_detail": "Latency impacts event timing, but correctness conditions should remain stable.",
+      "hints": {
+        "nudge": "Record baseline run outcome.",
+        "concept": "Comparative analysis requires stable reference run.",
+        "explicit": "Run baseline once and note fs_ok/completion before tuning."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose timing differences without conflating correctness.",
+      "goal": "Pass required checks while explaining observed latency effects.",
+      "hints": {
+        "nudge": "Separate timing changes from correctness status.",
+        "concept": "Longer completion time does not imply invariant failure.",
+        "explicit": "Compare trace timing and confirm fs_ok remains true."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune latency and preserve invariant/completion requirements.",
+      "goal": "Use bounded config edits and keep all checks passing.",
+      "hints": {
+        "nudge": "Adjust one latency parameter.",
+        "concept": "Controlled tuning isolates timing effects safely.",
+        "explicit": "Apply one change, rerun, and submit when fs_ok + completion validators pass."
+      }
+    }
+  ]
+}

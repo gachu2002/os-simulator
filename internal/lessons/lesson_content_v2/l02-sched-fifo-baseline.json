@@ -1,0 +1,28 @@
+{
+  "id": "l02-sched-fifo-baseline",
+  "difficulty": "foundation",
+  "estimated_minutes": 18,
+  "chapter_refs": [
+    "cpu-sched"
+  ],
+  "learn": {
+    "core_idea": "FIFO runs the earliest ready job until it blocks or exits, which can delay short jobs behind long ones.",
+    "mechanism_steps": [
+      "Ready queue preserves arrival order.",
+      "Dispatcher selects queue head.",
+      "Running job keeps CPU until completion or block.",
+      "Next queued job starts only after release."
+    ],
+    "worked_example": "A long first job can postpone short-job start, increasing short-job response time.",
+    "common_mistakes": [
+      "Confusing deterministic order with fairness.",
+      "Comparing only turnaround and ignoring response.",
+      "Assuming non-preemptive means fewer tradeoffs."
+    ],
+    "pre_challenge_checklist": [
+      "I can explain convoy effect.",
+      "I can locate first dispatch for each process.",
+      "I can compare FIFO behavior with RR baseline."
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l02-sched-fifo-baseline",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe FIFO run-to-completion behavior for queued processes.",
+      "goal": "Identify convoy-like ordering directly from dispatch trace.",
+      "theory_detail": "FIFO chooses oldest ready process and keeps CPU ownership until block or exit.",
+      "hints": {
+        "nudge": "Locate first dispatch for each process.",
+        "concept": "FIFO may delay short jobs behind long jobs.",
+        "explicit": "Step through until both processes dispatch and compare start times."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Connect FIFO trace ordering to completion metrics.",
+      "goal": "Pass completion check while explaining FIFO tradeoffs.",
+      "hints": {
+        "nudge": "Check completion after observing order.",
+        "concept": "Deterministic order does not imply fairness quality.",
+        "explicit": "Run until both jobs exit, then submit with trace evidence."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply alternative policy and compare against FIFO baseline.",
+      "goal": "Use tuning action to preserve completion while changing dispatch cadence.",
+      "hints": {
+        "nudge": "Compare before/after runs.",
+        "concept": "Policy changes should affect cadence without violating completion.",
+        "explicit": "Apply policy, rerun same workload, and verify required checks."
+      }
+    }
+  ]
+}

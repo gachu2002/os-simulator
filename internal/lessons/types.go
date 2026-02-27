@@ -26,6 +26,11 @@ type HintSet struct {
 	Explicit string
 }
 
+type ValidatorHint struct {
+	Validator string
+	Hints     HintSet
+}
+
 type ChallengeLimits struct {
 	MaxSteps         int
 	MaxPolicyChanges int
@@ -38,21 +43,27 @@ type ActionDescription struct {
 }
 
 type Stage struct {
-	ID                 string
-	Title              string
-	Objective          string
-	Goal               string
-	TheoryDetail       string
-	Prerequisites      []string
-	Config             SimConfig
-	Commands           []sim.Command
-	Bootstrap          []sim.Command
-	AllowedCmds        []string
-	ActionDescriptions []ActionDescription
-	ExpectedVisualCues []string
-	Limits             ChallengeLimits
-	Validators         []ValidatorSpec
-	Hints              HintSet
+	ID                    string
+	Title                 string
+	CoreIdea              string
+	MechanismSteps        []string
+	WorkedExample         string
+	CommonMistakes        []string
+	PreChallengeChecklist []string
+	Objective             string
+	Goal                  string
+	TheoryDetail          string
+	Prerequisites         []string
+	Config                SimConfig
+	Commands              []sim.Command
+	Bootstrap             []sim.Command
+	AllowedCmds           []string
+	ActionDescriptions    []ActionDescription
+	ExpectedVisualCues    []string
+	Limits                ChallengeLimits
+	Validators            []ValidatorSpec
+	Hints                 HintSet
+	ValidatorHints        []ValidatorHint
 }
 
 type Lesson struct {

@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
-func TestLessonsListEndpoint(t *testing.T) {
+func TestCurriculumEndpoint(t *testing.T) {
 	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/lessons")
+	resp, err := http.Get(ts.URL + "/curriculum")
 	if err != nil {
-		t.Fatalf("get lessons failed: %v", err)
+		t.Fatalf("get curriculum failed: %v", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -21,35 +22,56 @@ func TestLessonsListEndpoint(t *testing.T) {
 		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusOK)
 	}
 
-	var out LessonsResponse
+	var out CurriculumResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		t.Fatalf("decode lessons failed: %v", err)
+		t.Fatalf("decode curriculum failed: %v", err)
 	}
-	if len(out.Lessons) != 28 {
-		t.Fatalf("lesson count=%d want=28", len(out.Lessons))
+	if len(out.Sections) < 5 {
+		t.Fatalf("section count=%d want>=5", len(out.Sections))
 	}
-	if len(out.Lessons[0].Stages) == 0 {
-		t.Fatalf("first lesson should include stage summaries")
+	if out.Sections[0].ID != "introduction" || !out.Sections[0].ComingSoon {
+		t.Fatalf("expected introduction section as coming soon")
 	}
-	if len(out.Lessons[0].Stages) != 3 {
-		t.Fatalf("first lesson stage count=%d want=3", len(out.Lessons[0].Stages))
+
+	var foundVirtualization bool
+	for _, section := range out.Sections {
+		if section.ID == "virtualization" {
+			foundVirtualization = true
+			if len(section.Lessons) == 0 {
+				t.Fatalf("expected virtualization lessons")
+			}
+		}
 	}
-	if out.Lessons[0].Stages[0].Title == "" {
-		t.Fatalf("first stage title should be populated")
+	if !foundVirtualization {
+		t.Fatalf("expected virtualization section")
 	}
-	if out.Lessons[0].SectionID == "" || out.Lessons[0].SectionTitle == "" {
-		t.Fatalf("expected section metadata on lesson summary")
+}
+
+func TestLessonLearnEndpoint(t *testing.T) {
+	ts := httptest.NewServer(NewServer(NewSessionManager()).Handler())
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/lessons/l01-sched-rr-basics/learn")
+	if err != nil {
+		t.Fatalf("get lesson learn failed: %v", err)
 	}
-	if out.Lessons[0].SectionID != "virtualization" {
-		t.Fatalf("first lesson section id=%q want=%q", out.Lessons[0].SectionID, "virtualization")
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status=%d want=%d", resp.StatusCode, http.StatusOK)
 	}
-	if out.Lessons[0].SectionTitle != "Virtualization" {
-		t.Fatalf("first lesson section title=%q want=%q", out.Lessons[0].SectionTitle, "Virtualization")
+
+	var out LessonLearnResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatalf("decode lesson learn failed: %v", err)
 	}
-	if out.Lessons[0].Stages[0].Goal == "" {
-		t.Fatalf("expected goal metadata on stage summary")
+	if out.Lesson.ID != "l01-sched-rr-basics" {
+		t.Fatalf("lesson id=%q want=%q", out.Lesson.ID, "l01-sched-rr-basics")
 	}
-	if len(out.Lessons[0].Stages[0].ActionDescriptions) == 0 {
-		t.Fatalf("expected action descriptions on stage summary")
+	if len(out.Lesson.Stages) == 0 {
+		t.Fatalf("expected learn stages")
+	}
+	if strings.TrimSpace(out.Lesson.Stages[0].CoreIdea) == "" {
+		t.Fatalf("expected core idea content for first stage")
 	}
 }

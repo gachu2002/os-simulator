@@ -2,9 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import {
-  fetchLessonsForLearner,
-  gradeChallenge,
+  fetchCurriculumForLearner,
   startChallenge,
+  submitChallenge,
   type ChallengeGradeResponse,
   type ChallengeStartResponse,
 } from "../lib/lessonApi";
@@ -15,20 +15,16 @@ import { initialSessionState, sessionReducer } from "../state/sessionReducer";
 
 interface UseLessonRunnerOptions {
   baseURL: string;
-  onGradeResult?: (result: ChallengeGradeResponse) => void;
   preferredLessonID?: string;
   preferredStageIndex?: number;
 }
 
 export function useLessonRunner({
   baseURL,
-  onGradeResult,
   preferredLessonID,
   preferredStageIndex,
 }: UseLessonRunnerOptions) {
   const [liveState, dispatch] = useReducer(sessionReducer, initialSessionState);
-  const [selectedLessonIDState, setSelectedLessonIDState] = useState("");
-  const [selectedStageIndexState, setSelectedStageIndexState] = useState(0);
   const [runResult, setRunResult] = useState<ChallengeGradeResponse | null>(null);
   const [runError, setRunError] = useState("");
   const [policy, setPolicy] = useState<"fifo" | "rr" | "mlfq">("rr");
@@ -38,7 +34,7 @@ export function useLessonRunner({
 
   const lessonsQuery = useQuery({
     queryKey: ["challenges", baseURL, learnerID],
-    queryFn: () => fetchLessonsForLearner(baseURL, learnerID),
+    queryFn: () => fetchCurriculumForLearner(baseURL, learnerID),
   });
 
   const startChallengeMutation = useMutation({
@@ -48,7 +44,7 @@ export function useLessonRunner({
 
   const gradeChallengeMutation = useMutation({
     mutationFn: ({ attemptID }: { attemptID: string }) =>
-      gradeChallenge(baseURL, attemptID, learnerID),
+      submitChallenge(baseURL, attemptID, learnerID),
   });
 
   const [attempt, setAttempt] = useState<ChallengeStartResponse | null>(null);
@@ -60,7 +56,10 @@ export function useLessonRunner({
     };
   }, []);
 
-  const lessons = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
+  const lessons = useMemo(() => {
+    const sections = lessonsQuery.data ?? [];
+    return sections.flatMap((section) => section.lessons ?? []);
+  }, [lessonsQuery.data]);
 
   const selectedLessonID = useMemo(() => {
     if (lessons.length === 0) {
@@ -69,11 +68,8 @@ export function useLessonRunner({
     if (preferredLessonID && lessons.some((lesson) => lesson.id === preferredLessonID)) {
       return preferredLessonID;
     }
-    if (lessons.some((lesson) => lesson.id === selectedLessonIDState)) {
-      return selectedLessonIDState;
-    }
     return lessons[0].id;
-  }, [lessons, preferredLessonID, selectedLessonIDState]);
+  }, [lessons, preferredLessonID]);
 
   const selectedLesson = useMemo(
     () => lessons.find((lesson) => lesson.id === selectedLessonID) ?? null,
@@ -91,13 +87,8 @@ export function useLessonRunner({
     ) {
       return preferredStageIndex;
     }
-    if (
-      selectedLesson.stages.some((stage) => stage.index === selectedStageIndexState)
-    ) {
-      return selectedStageIndexState;
-    }
-    return selectedLesson.stages[0]?.index ?? 0;
-  }, [preferredLessonID, preferredStageIndex, selectedLesson, selectedStageIndexState]);
+    return selectedLesson.stages.find((stage) => stage.unlocked !== false)?.index ?? selectedLesson.stages[0]?.index ?? 0;
+  }, [preferredLessonID, preferredStageIndex, selectedLesson]);
 
   const selectedStage = useMemo(() => {
     if (!selectedLesson) {
@@ -125,16 +116,6 @@ export function useLessonRunner({
       return allowedCommandSet.has(name);
     },
     [allowedCommandSet],
-  );
-
-  const handleLessonChange = useCallback(
-    (lessonID: string) => {
-      setSelectedLessonIDState(lessonID);
-      const lesson = lessons.find((item) => item.id === lessonID);
-      const stage = lesson?.stages.find((item) => item.unlocked !== false) ?? lesson?.stages[0];
-      setSelectedStageIndexState(stage?.index ?? 0);
-    },
-    [lessons],
   );
 
   const handleStart = useCallback(async () => {
@@ -203,11 +184,10 @@ export function useLessonRunner({
         attemptID,
       });
       setRunResult(result);
-      onGradeResult?.(result);
     } catch (err) {
       setRunError(err instanceof Error ? err.message : "failed to check challenge");
     }
-  }, [attemptID, gradeChallengeMutation, onGradeResult]);
+  }, [attemptID, gradeChallengeMutation]);
 
   return {
     lessons,
@@ -228,8 +208,6 @@ export function useLessonRunner({
     isGradePending: gradeChallengeMutation.isPending,
     setPolicy,
     setQuantum,
-    setSelectedStageIndexState,
-    handleLessonChange,
     handleStart,
     handleCommand,
     handleGrade,

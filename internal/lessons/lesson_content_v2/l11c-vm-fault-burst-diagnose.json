@@ -1,0 +1,29 @@
+{
+  "id": "l11c-vm-fault-burst-diagnose",
+  "difficulty": "advanced",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "vm-beyondphys-policy",
+    "vm-paging"
+  ],
+  "learn": {
+    "core_idea": "Burst faults indicate capacity mismatch between active pages and available memory resources.",
+    "mechanism_steps": [
+      "Detect concentrated fault intervals.",
+      "Relate bursts to working-set transitions.",
+      "Apply capacity tuning to reduce churn.",
+      "Re-check fault and completion constraints."
+    ],
+    "worked_example": "A sequence larger than frame budget causes clustered faults that shrink after tuning.",
+    "common_mistakes": [
+      "Treating burst faults as random noise.",
+      "Reducing faults but failing completion target.",
+      "Not validating deterministic repeatability."
+    ],
+    "pre_challenge_checklist": [
+      "I can spot burst patterns in trace/counters.",
+      "I can explain likely capacity cause.",
+      "I can confirm post-tuning improvement."
+    ]
+  }
+}

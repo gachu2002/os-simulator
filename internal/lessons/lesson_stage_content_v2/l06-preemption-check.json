@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l06-preemption-check",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe timer-driven preemption events in CPU trace.",
+      "goal": "Confirm proc.preempt appears with follow-up dispatch behavior.",
+      "theory_detail": "Preemption protects responsiveness by forcing periodic release of CPU ownership.",
+      "hints": {
+        "nudge": "Search for proc.preempt first.",
+        "concept": "Preemption differs from blocking; it is scheduler/timer-driven.",
+        "explicit": "Run until multiple preempt-dispatch pairs appear in trace."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether preemption still yields full workload completion.",
+      "goal": "Pass preemption evidence and completion requirement together.",
+      "hints": {
+        "nudge": "Check completion after preemption evidence.",
+        "concept": "Correct preemption should preserve eventual completion.",
+        "explicit": "Continue execution until both jobs exit, then submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune scheduling and verify preemption correctness is preserved.",
+      "goal": "Apply policy adjustments while keeping preemption and completion checks passing.",
+      "hints": {
+        "nudge": "Do not over-change policy settings.",
+        "concept": "Tuning changes cadence, not the need for valid preempt/dispatch flow.",
+        "explicit": "Apply one change, rerun, and verify proc.preempt plus completion checks."
+      }
+    }
+  ]
+}

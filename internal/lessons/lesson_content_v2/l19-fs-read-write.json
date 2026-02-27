@@ -1,0 +1,29 @@
+{
+  "id": "l19-fs-read-write",
+  "difficulty": "intermediate",
+  "estimated_minutes": 22,
+  "chapter_refs": [
+    "file-intro",
+    "file-implementation"
+  ],
+  "learn": {
+    "core_idea": "Mixed read/write sequences test both access correctness and ordering assumptions.",
+    "mechanism_steps": [
+      "Resolve path and open handle.",
+      "Execute read operations.",
+      "Execute write operations with mapping.",
+      "Validate final process completion and consistency."
+    ],
+    "worked_example": "A read-then-write sequence should show both path and blockmap evidence with clean exit.",
+    "common_mistakes": [
+      "Checking one operation type only.",
+      "Ignoring ordering constraints.",
+      "Submitting before all operations complete."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify both read and write traces.",
+      "I can verify path/blockmap coverage.",
+      "I can confirm completion metric target."
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l04-response-under-rr",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe baseline RR response behavior for mixed-length jobs.",
+      "goal": "Identify response-relevant trace events before tuning.",
+      "theory_detail": "Response time reflects how quickly a process first receives CPU after arrival.",
+      "hints": {
+        "nudge": "Focus on first dispatch timing.",
+        "concept": "Response metrics depend on early dispatch decisions.",
+        "explicit": "Run baseline and inspect first dispatch tick for each process."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether baseline run meets response requirement.",
+      "goal": "Use metrics and trace to explain pass/fail state.",
+      "hints": {
+        "nudge": "Check avg_response_time directly.",
+        "concept": "Good response can still fail if completion is insufficient.",
+        "explicit": "Run until completion target is reached and re-check response threshold."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune policy/quantum to satisfy response target under limits.",
+      "goal": "Meet response and completion checks within policy-change budget.",
+      "hints": {
+        "nudge": "Try small quantum adjustment first.",
+        "concept": "Quantum tuning shifts latency tradeoff; validate both metrics.",
+        "explicit": "Apply policy change, rerun workload, and submit only when both checks pass."
+      }
+    }
+  ]
+}

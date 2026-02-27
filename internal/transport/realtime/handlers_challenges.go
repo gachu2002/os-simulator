@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
+	"strings"
 
 	"os-simulator-plan/internal/lessons"
 	"os-simulator-plan/internal/sim"
@@ -78,6 +80,8 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 		StageTitle:      prepared.Stage.Title,
 		Module:          prepared.Module,
 		Objective:       challengeObjective(prepared),
+		Goal:            prepared.Stage.Goal,
+		PassConditions:  stagePassConditions(prepared.Stage),
 		AllowedCommands: allowedCommands,
 		Limits: ChallengeLimitsDTO{
 			MaxSteps:         maxSteps,
@@ -87,7 +91,7 @@ func (s *Server) handleChallengeStart(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) handleChallengeGrade(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleChallengeSubmit(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
@@ -130,13 +134,16 @@ func (s *Server) handleChallengeGrade(w http.ResponseWriter, r *http.Request) {
 	analytics := engine.CompletionAnalytics()
 
 	respondJSON(w, http.StatusOK, ChallengeGradeResponse{
-		AttemptID:   attempt.AttemptID,
-		LessonID:    attempt.Prepared.LessonID,
-		StageIndex:  attempt.Prepared.StageIndex,
-		Passed:      result.Passed,
-		FeedbackKey: result.FeedbackKey,
-		Hint:        result.Hint,
-		HintLevel:   result.HintLevel,
+		AttemptID:      attempt.AttemptID,
+		LessonID:       attempt.Prepared.LessonID,
+		StageIndex:     attempt.Prepared.StageIndex,
+		Passed:         result.Passed,
+		FeedbackKey:    result.FeedbackKey,
+		Objective:      challengeObjective(attempt.Prepared),
+		Goal:           attempt.Prepared.Stage.Goal,
+		PassConditions: stagePassConditions(attempt.Prepared.Stage),
+		Hint:           result.Hint,
+		HintLevel:      result.HintLevel,
 		Output: LessonOutputDTO{
 			Tick:         result.Output.Metrics.TotalTicks,
 			TraceHash:    sim.TraceHash(result.Output.Trace),
@@ -147,22 +154,178 @@ func (s *Server) handleChallengeGrade(w http.ResponseWriter, r *http.Request) {
 			FilesystemOK: result.Output.FilesystemOK,
 		},
 		Analytics:        convertAnalytics(analytics),
-		ValidatorResults: convertValidatorResults(result.ValidatorResults),
+		ValidatorResults: convertValidatorResults(result.ValidatorResults, attempt.Prepared.Stage, result.Output),
 	})
 }
 
-func convertValidatorResults(in []lessons.ValidationResult) []ValidatorResultDTO {
+func convertValidatorResults(in []lessons.ValidationResult, stage lessons.Stage, output lessons.StageOutput) []ValidatorResultDTO {
+	validatorByName := make(map[string]lessons.ValidatorSpec, len(stage.Validators))
+	for _, spec := range stage.Validators {
+		validatorByName[spec.Name] = spec
+	}
+
 	out := make([]ValidatorResultDTO, 0, len(in))
 	for _, item := range in {
+		expected, actual := validatorExpectedActual(item, validatorByName[item.Name], output)
 		out = append(out, ValidatorResultDTO{
-			Name:    item.Name,
-			Type:    item.Type,
-			Key:     item.Key,
-			Passed:  item.Passed,
-			Message: item.Message,
+			Name:     item.Name,
+			Type:     item.Type,
+			Key:      item.Key,
+			Passed:   item.Passed,
+			Message:  item.Message,
+			Expected: expected,
+			Actual:   actual,
 		})
 	}
 	return out
+}
+
+func validatorExpectedActual(result lessons.ValidationResult, spec lessons.ValidatorSpec, output lessons.StageOutput) (string, string) {
+	switch result.Type {
+	case "trace_contains_all":
+		expected := "contains all: " + stringsJoinOrAny(spec.Values)
+		if result.Passed {
+			return expected, "all required events present"
+		}
+		if result.Message != "" {
+			return expected, result.Message
+		}
+		return expected, "missing one or more required events"
+	case "trace_order":
+		expected := "ordered sequence: " + stringsJoinWithArrow(spec.Values)
+		if result.Passed {
+			return expected, "order satisfied"
+		}
+		if result.Message != "" {
+			return expected, result.Message
+		}
+		return expected, "order not satisfied"
+	case "trace_count_eq":
+		kind := firstOr(spec.Values, "unknown")
+		expected := strconv.Itoa(int(spec.Number))
+		actual := strconv.Itoa(traceCount(output, kind))
+		return expected, actual
+	case "trace_count_lte":
+		kind := firstOr(spec.Values, "unknown")
+		expected := "<= " + strconv.Itoa(int(spec.Number))
+		actual := strconv.Itoa(traceCount(output, kind))
+		return expected, actual
+	case "no_event":
+		expected := "none of: " + stringsJoinOrAny(spec.Values)
+		if result.Passed {
+			return expected, "none present"
+		}
+		if result.Message != "" {
+			return expected, result.Message
+		}
+		return expected, "forbidden event present"
+	case "metric_eq":
+		expected := trimFloat(spec.Number)
+		got, ok := metricValue(output, spec.Key)
+		if !ok {
+			return expected, "n/a"
+		}
+		return expected, trimFloat(got)
+	case "metric_gte":
+		expected := ">= " + trimFloat(spec.Number)
+		got, ok := metricValue(output, spec.Key)
+		if !ok {
+			return expected, "n/a"
+		}
+		return expected, trimFloat(got)
+	case "metric_lte":
+		expected := "<= " + trimFloat(spec.Number)
+		got, ok := metricValue(output, spec.Key)
+		if !ok {
+			return expected, "n/a"
+		}
+		return expected, trimFloat(got)
+	case "fault_eq":
+		expected := strconv.Itoa(int(spec.Number))
+		got, ok := faultValue(output, spec.Key)
+		if !ok {
+			return expected, "n/a"
+		}
+		return expected, strconv.Itoa(got)
+	case "fault_lte":
+		expected := "<= " + strconv.Itoa(int(spec.Number))
+		got, ok := faultValue(output, spec.Key)
+		if !ok {
+			return expected, "n/a"
+		}
+		return expected, strconv.Itoa(got)
+	case "fs_ok":
+		if output.FilesystemOK {
+			return "true", "true"
+		}
+		return "true", "false"
+	default:
+		if result.Passed {
+			return "pass", "pass"
+		}
+		return "pass", "fail"
+	}
+}
+
+func stringsJoinOrAny(values []string) string {
+	if len(values) == 0 {
+		return "any"
+	}
+	return strings.Join(values, ", ")
+}
+
+func stringsJoinWithArrow(values []string) string {
+	if len(values) == 0 {
+		return "any"
+	}
+	return strings.Join(values, " -> ")
+}
+
+func firstOr(values []string, fallback string) string {
+	if len(values) == 0 {
+		return fallback
+	}
+	return values[0]
+}
+
+func metricValue(output lessons.StageOutput, key string) (float64, bool) {
+	switch key {
+	case "completed_processes":
+		return float64(output.Metrics.CompletedProcesses), true
+	case "avg_response_time":
+		return output.Metrics.AvgResponseTime, true
+	case "avg_turnaround_time":
+		return output.Metrics.AvgTurnaroundTime, true
+	case "throughput_per_100_ticks":
+		return output.Metrics.ThroughputPer100Tick, true
+	case "fairness_jain_index":
+		return output.Metrics.FairnessJainIndex, true
+	case "total_ticks":
+		return float64(output.Metrics.TotalTicks), true
+	default:
+		return 0, false
+	}
+}
+
+func traceCount(output lessons.StageOutput, kind string) int {
+	total := 0
+	for _, ev := range output.Trace {
+		if ev.Kind == kind {
+			total++
+		}
+	}
+	return total
+}
+
+func faultValue(output lessons.StageOutput, key string) (int, bool) {
+	switch key {
+	case "not_present":
+		return output.Memory.Faults.NotPresent, true
+	case "permission":
+		return output.Memory.Faults.Permission, true
+	default:
+		return 0, false
+	}
 }
 
 func challengeObjective(prepared lessons.PreparedStage) string {

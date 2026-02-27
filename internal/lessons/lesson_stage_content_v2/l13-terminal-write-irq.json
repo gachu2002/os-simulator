@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l13-terminal-write-irq",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe async terminal write completion path.",
+      "goal": "Verify write-related wakeup and trap return events.",
+      "theory_detail": "Write may block on device completion; IRQ wakeup resumes progress.",
+      "hints": {
+        "nudge": "Find sys.write and wakeup in trace.",
+        "concept": "Asynchronous completion separates request time from resume time.",
+        "explicit": "Run until sys.write, proc.wakeup, and trap.return all appear."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose completion after asynchronous write flow.",
+      "goal": "Pass event and completion checks for write scenario.",
+      "hints": {
+        "nudge": "Confirm process actually exits.",
+        "concept": "Event visibility is necessary but completion is still required.",
+        "explicit": "Continue execution until completed_processes reaches 1."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune device latency and preserve correctness.",
+      "goal": "Maintain wakeup/completion checks after tuning.",
+      "hints": {
+        "nudge": "Compare tuned run to baseline.",
+        "concept": "Latency alters timing, not correctness constraints.",
+        "explicit": "Apply one latency change, rerun, and re-check all validators."
+      }
+    }
+  ]
+}

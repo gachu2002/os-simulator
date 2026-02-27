@@ -1,0 +1,47 @@
+{
+  "cpu": [
+    {"id": "l01-sched-rr-basics", "title": "Round Robin Dispatch Basics", "seed": 11, "p1": "COMPUTE 4; EXIT", "p2": "COMPUTE 4; EXIT", "steps": 20},
+    {"id": "l02-sched-fifo-baseline", "title": "FIFO Baseline and Ordering", "seed": 12, "p1": "COMPUTE 5; EXIT", "p2": "COMPUTE 2; EXIT", "steps": 20},
+    {"id": "l03-sched-mlfq-balance", "title": "MLFQ Fairness and Balance", "seed": 13, "p1": "COMPUTE 6; EXIT", "p2": "COMPUTE 6; EXIT", "steps": 24},
+    {"id": "l04-response-under-rr", "title": "Response Time under RR", "seed": 14, "p1": "COMPUTE 3; EXIT", "p2": "COMPUTE 7; EXIT", "steps": 22},
+    {"id": "l05-throughput-shared-cpu", "title": "Throughput on Shared CPU", "seed": 15, "p1": "COMPUTE 4; EXIT", "p2": "COMPUTE 4; EXIT", "steps": 18},
+    {"id": "l06-preemption-check", "title": "Preemption Behavior Check", "seed": 16, "p1": "COMPUTE 5; EXIT", "p2": "COMPUTE 5; EXIT", "steps": 24},
+    {"id": "l06b-lottery-tradeoffs", "title": "Fairness Tradeoffs in Shared CPU", "seed": 17, "p1": "COMPUTE 8; EXIT", "p2": "COMPUTE 2; EXIT", "steps": 26},
+    {"id": "l06c-quantum-response-tuning", "title": "Quantum Tuning and Response", "seed": 18, "p1": "COMPUTE 6; EXIT", "p2": "COMPUTE 6; EXIT", "steps": 24}
+  ],
+  "memory": {
+    "module_prerequisite": "l06c-quantum-response-tuning:s3",
+    "lessons": [
+      {"id": "l07-vm-fault-sequence", "title": "Page Fault Sequence", "seed": 21, "frames": 2, "program": "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x0 r; EXIT", "steps": 12, "faults": 4},
+      {"id": "l08-vm-pressure-repeat", "title": "Frame Pressure with Repeated Access", "seed": 22, "frames": 2, "program": "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x3000 r; EXIT", "steps": 14, "faults": 4},
+      {"id": "l09-vm-tlb-activity", "title": "TLB Hit and Miss Activity", "seed": 23, "frames": 3, "program": "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x0 r; ACCESS 0x1000 r; EXIT", "steps": 12, "faults": 2},
+      {"id": "l10-vm-replacement-fifo", "title": "FIFO Page Replacement", "seed": 24, "frames": 2, "program": "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; EXIT", "steps": 10, "faults": 3},
+      {"id": "l11-vm-mixed-access", "title": "Mixed Read/Write Access", "seed": 25, "frames": 2, "program": "ACCESS 0x0 r; ACCESS 0x1000 w; ACCESS 0x2000 r; EXIT", "steps": 10, "faults": 3},
+      {"id": "l11b-vm-locality-window", "title": "Locality Window and Reuse", "seed": 26, "frames": 3, "program": "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x1000 r; ACCESS 0x0 r; EXIT", "steps": 14, "faults": 3},
+      {"id": "l11c-vm-fault-burst-diagnose", "title": "Fault Burst Diagnosis", "seed": 27, "frames": 2, "program": "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x3000 r; ACCESS 0x0 r; EXIT", "steps": 16, "faults": 5}
+    ]
+  },
+  "concurrency": {
+    "module_prerequisite": "l11c-vm-fault-burst-diagnose:s3",
+    "lessons": [
+      {"id": "l12-irq-wakeup-read", "title": "Read Syscall IRQ Wakeup", "seed": 31, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 4; COMPUTE 1; EXIT", "steps": 14},
+      {"id": "l13-terminal-write-irq", "title": "Terminal Write Interrupt Path", "seed": 32, "program": "SYSCALL open /docs/readme.txt; SYSCALL write 3; COMPUTE 1; EXIT", "steps": 10},
+      {"id": "l14-sleep-wakeup", "title": "Sleep and Wakeup Timing", "seed": 33, "program": "SYSCALL sleep 2; COMPUTE 1; EXIT", "steps": 10},
+      {"id": "l15-mixed-blocking", "title": "Mixed Blocking Workload", "seed": 34, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL sleep 2; EXIT", "steps": 16},
+      {"id": "l15b-irq-interleave-order", "title": "IRQ Interleave Event Order", "seed": 35, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL write 2; COMPUTE 1; EXIT", "steps": 16},
+      {"id": "l15c-blocked-progress-guarantee", "title": "Blocked Progress Guarantee", "seed": 36, "program": "SYSCALL sleep 2; SYSCALL read 2; COMPUTE 2; EXIT", "steps": 18}
+    ]
+  },
+  "persistence": {
+    "module_prerequisite": "l15c-blocked-progress-guarantee:s3",
+    "lessons": [
+      {"id": "l16-fs-open-traversal", "title": "Filesystem Path Traversal", "seed": 41, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL exit", "steps": 12},
+      {"id": "l17-fs-read-blockmap", "title": "Read Path Block Mapping", "seed": 42, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL exit", "steps": 14},
+      {"id": "l18-fs-write-blockmap", "title": "Write Path Block Mapping", "seed": 43, "program": "SYSCALL open /docs/readme.txt; SYSCALL write 4; SYSCALL exit", "steps": 14},
+      {"id": "l19-fs-read-write", "title": "Read/Write Sequence", "seed": 44, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL write 3; SYSCALL exit", "steps": 16},
+      {"id": "l20-fs-invariants", "title": "Filesystem Invariants", "seed": 45, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL write 2; SYSCALL exit", "steps": 16},
+      {"id": "l20b-fs-latency-compare", "title": "Persistence Latency Comparison", "seed": 46, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL write 3; SYSCALL exit", "steps": 18},
+      {"id": "l20c-fs-trace-audit", "title": "Filesystem Trace Audit", "seed": 47, "program": "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL write 2; SYSCALL read 1; SYSCALL exit", "steps": 18}
+    ]
+  }
+}

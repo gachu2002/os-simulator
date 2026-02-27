@@ -1,0 +1,29 @@
+{
+  "id": "l15-mixed-blocking",
+  "difficulty": "intermediate",
+  "estimated_minutes": 22,
+  "chapter_refs": [
+    "threads-intro",
+    "file-devices"
+  ],
+  "learn": {
+    "core_idea": "Real workloads combine multiple blocking causes; liveness depends on consistent wakeup handling.",
+    "mechanism_steps": [
+      "Issue mixed syscalls (I/O and sleep).",
+      "Observe alternating block reasons.",
+      "Track wakeup events from each source.",
+      "Confirm resumed progress reaches exit."
+    ],
+    "worked_example": "Read then sleep sequence requires both device IRQ and timer wake to complete fully.",
+    "common_mistakes": [
+      "Debugging only one block cause.",
+      "Ignoring trap return between blocked phases.",
+      "Assuming one wakeup implies full completion."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify each blocking reason.",
+      "I can map wakeups back to causes.",
+      "I can verify final completion metric."
+    ]
+  }
+}

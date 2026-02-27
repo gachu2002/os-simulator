@@ -1,0 +1,29 @@
+{
+  "id": "l06-preemption-check",
+  "difficulty": "intermediate",
+  "estimated_minutes": 18,
+  "chapter_refs": [
+    "cpu-mechanisms",
+    "cpu-sched"
+  ],
+  "learn": {
+    "core_idea": "Preemption relies on timer interrupts to keep CPU ownership bounded and maintain responsiveness.",
+    "mechanism_steps": [
+      "Running process consumes quantum.",
+      "Timer tick reaches preemption point.",
+      "Kernel records proc.preempt and requeues process.",
+      "Dispatcher selects next ready process."
+    ],
+    "worked_example": "Two long jobs show repeated preempt-dispatch cycles before exit.",
+    "common_mistakes": [
+      "Expecting preemption under FIFO baseline.",
+      "Confusing block transitions with preempt transitions.",
+      "Ignoring timer-driven nature of the event."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify proc.preempt events.",
+      "I can distinguish block vs preempt in trace.",
+      "I can confirm completion remains intact."
+    ]
+  }
+}

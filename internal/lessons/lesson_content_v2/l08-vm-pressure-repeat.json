@@ -1,0 +1,28 @@
+{
+  "id": "l08-vm-pressure-repeat",
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "vm-paging"
+  ],
+  "learn": {
+    "core_idea": "With limited frames, pages can be evicted before reuse, causing repeated faults.",
+    "mechanism_steps": [
+      "Populate frames with initial pages.",
+      "Introduce additional pages beyond frame capacity.",
+      "Eviction removes older resident page.",
+      "Later reuse faults if evicted page is needed again."
+    ],
+    "worked_example": "A loop over more pages than frames repeatedly faults on revisits.",
+    "common_mistakes": [
+      "Assuming revisit always means TLB/page hit.",
+      "Ignoring replacement side effects.",
+      "Not checking frame count constraints."
+    ],
+    "pre_challenge_checklist": [
+      "I can reason about frame pressure.",
+      "I can explain repeated-fault cause.",
+      "I can validate expected fault total."
+    ]
+  }
+}

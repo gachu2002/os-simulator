@@ -62,7 +62,7 @@ This extends current `Lesson` and `Stage` structures and keeps deterministic com
 ## Mastery Rules
 
 - Pass threshold: mission validators all pass.
-- Mastery threshold: pass all required stage missions for a module.
+- Mastery threshold: pass all required lesson challenges for a module.
 - Module mastery: all core missions passed, plus at least one challenge mission.
 - Course completion: all modules mastered in sequence.
 
@@ -81,3 +81,10 @@ This step is complete when:
 - All future learning features reference this document.
 - New lessons are written against the mission contract.
 - UI/transport work maps to one of the two product modes.
+
+## Current Contract and Curriculum References
+
+- Product contract (Phase 0): `docs/learning-contract-v1.md`
+- Chapter map (v2): `docs/curriculum/ostep-chapter-map-v2.md`
+- Lesson schema (v2): `docs/curriculum/lesson-schema-v2.md`
+- Failure taxonomy (v2): `docs/curriculum/failure-taxonomy-v2.md`

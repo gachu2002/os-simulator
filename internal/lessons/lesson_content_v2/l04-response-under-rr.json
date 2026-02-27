@@ -1,0 +1,28 @@
+{
+  "id": "l04-response-under-rr",
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "cpu-sched"
+  ],
+  "learn": {
+    "core_idea": "Quantum tuning changes latency/overhead tradeoffs; smaller quanta usually improve response but may add scheduling overhead.",
+    "mechanism_steps": [
+      "Set policy and quantum.",
+      "Observe dispatch frequency changes.",
+      "Measure response and completion metrics.",
+      "Adjust until threshold and progress constraints hold."
+    ],
+    "worked_example": "Reducing quantum can lower average response time while preserving completion under bounded load.",
+    "common_mistakes": [
+      "Optimizing response while breaking completion target.",
+      "Using one run without metric comparison.",
+      "Ignoring budget limits during tuning."
+    ],
+    "pre_challenge_checklist": [
+      "I can interpret avg_response_time.",
+      "I can apply policy command safely.",
+      "I can stop when target is satisfied."
+    ]
+  }
+}

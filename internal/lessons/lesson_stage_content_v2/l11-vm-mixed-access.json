@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l11-vm-mixed-access",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe mixed read/write access trace under fixed memory config.",
+      "goal": "Confirm expected access and fault evidence for mixed operations.",
+      "theory_detail": "Mixed modes share translation path but still require valid residency and access checks.",
+      "hints": {
+        "nudge": "Track mode for each ACCESS operation.",
+        "concept": "Mixed access patterns can expose assumptions hidden in read-only runs.",
+        "explicit": "Annotate each instruction with mode and expected fault behavior."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose mixed-access fault outcomes exactly.",
+      "goal": "Pass fault count and trace checks for mixed access sequence.",
+      "hints": {
+        "nudge": "Verify not-present count against sequence.",
+        "concept": "Mismatch usually comes from incorrect eviction assumptions.",
+        "explicit": "Reset, rerun full sequence, and compare per-instruction results to counters."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply memory tuning without breaking mixed-access correctness.",
+      "goal": "Keep required validators passing after config updates.",
+      "hints": {
+        "nudge": "Tune one knob first.",
+        "concept": "Correctness checks stay mandatory after tuning.",
+        "explicit": "Apply config change, rerun workload, and verify fault + trace checks."
+      }
+    }
+  ]
+}

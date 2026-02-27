@@ -1,0 +1,28 @@
+{
+  "id": "l09-vm-tlb-activity",
+  "difficulty": "intermediate",
+  "estimated_minutes": 18,
+  "chapter_refs": [
+    "vm-tlbs"
+  ],
+  "learn": {
+    "core_idea": "TLBs cache recent translations, reducing repeated page-table work for locality-heavy access patterns.",
+    "mechanism_steps": [
+      "Lookup translation in TLB.",
+      "Hit returns frame immediately.",
+      "Miss falls back to page table and installs entry.",
+      "Subsequent local references tend to hit."
+    ],
+    "worked_example": "Alternating references between two hot pages quickly converges to TLB hits.",
+    "common_mistakes": [
+      "Confusing page fault with TLB miss.",
+      "Ignoring entry capacity and replacement.",
+      "Reading only total faults, not locality behavior."
+    ],
+    "pre_challenge_checklist": [
+      "I can explain hit vs miss path.",
+      "I can relate access order to hit potential.",
+      "I can verify miss reduction goal."
+    ]
+  }
+}

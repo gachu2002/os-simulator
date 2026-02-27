@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"os-simulator-plan/internal/lessons"
 )
 
-func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleCurriculum(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
@@ -16,8 +17,96 @@ func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 
 	learnerID := normalizeLearnerID(r.URL.Query().Get("learner_id"))
 	engine := s.lessonEngineForLearner(learnerID)
-
 	lessonsList := engine.Lessons()
+	lessonSummaries := lessonSummariesForEngine(engine, lessonsList)
+
+	sections := make([]CurriculumSection, 0, len(curriculumSectionOrder))
+	for idx, spec := range curriculumSectionOrder {
+		sectionLessons := make([]LessonSummary, 0)
+		completedStages := 0
+		totalStages := 0
+		for _, lesson := range lessonSummaries {
+			if lesson.SectionID != spec.ID {
+				continue
+			}
+			sectionLessons = append(sectionLessons, lesson)
+			totalStages += len(lesson.Stages)
+			for _, stage := range lesson.Stages {
+				if stage.Completed {
+					completedStages++
+				}
+			}
+		}
+		sections = append(sections, CurriculumSection{
+			ID:              spec.ID,
+			Title:           spec.Title,
+			Subtitle:        spec.Subtitle,
+			Order:           idx + 1,
+			ComingSoon:      spec.ComingSoon,
+			Lessons:         sectionLessons,
+			CompletedStages: completedStages,
+			TotalStages:     totalStages,
+		})
+	}
+
+	respondJSON(w, http.StatusOK, CurriculumResponse{Sections: sections})
+}
+
+func (s *Server) handleLessonLearn(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+		return
+	}
+
+	lessonID := strings.TrimSpace(chi.URLParam(r, "lessonID"))
+	if lessonID == "" {
+		respondError(w, r, http.StatusBadRequest, "invalid_lesson_id", "lesson id is required")
+		return
+	}
+
+	learnerID := normalizeLearnerID(r.URL.Query().Get("learner_id"))
+	engine := s.lessonEngineForLearner(learnerID)
+	lessonsList := engine.Lessons()
+
+	for _, lesson := range lessonsList {
+		if lesson.ID != lessonID {
+			continue
+		}
+		stages := make([]LessonLearnStage, 0, len(lesson.Stages))
+		for idx, stage := range lesson.Stages {
+			stages = append(stages, LessonLearnStage{
+				Index:                 idx,
+				ID:                    stage.ID,
+				Title:                 stage.Title,
+				CoreIdea:              stage.CoreIdea,
+				MechanismSteps:        stage.MechanismSteps,
+				WorkedExample:         stage.WorkedExample,
+				CommonMistakes:        stage.CommonMistakes,
+				PreChallengeChecklist: stage.PreChallengeChecklist,
+				Objective:             stage.Objective,
+				Goal:                  stage.Goal,
+				Prerequisites:         stage.Prerequisites,
+				ExpectedVisualCues:    stage.ExpectedVisualCues,
+			})
+		}
+		respondJSON(w, http.StatusOK, LessonLearnResponse{Lesson: LessonLearnSummary{
+			ID:               lesson.ID,
+			Title:            lesson.Title,
+			Module:           lesson.Module,
+			SectionID:        lesson.SectionID,
+			SectionTitle:     lesson.SectionTitle,
+			Difficulty:       lesson.Difficulty,
+			EstimatedMinutes: lesson.EstimatedMinutes,
+			ChapterRefs:      lesson.ChapterRefs,
+			Stages:           stages,
+		}})
+		return
+	}
+
+	respondError(w, r, http.StatusNotFound, "lesson_not_found", "lesson not found")
+}
+
+func lessonSummariesForEngine(engine *lessons.Engine, lessonsList []lessons.Lesson) []LessonSummary {
 
 	out := make([]LessonSummary, 0, len(lessonsList))
 	for _, lesson := range lessonsList {
@@ -28,8 +117,6 @@ func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 				Index:              idx,
 				ID:                 stage.ID,
 				Title:              stage.Title,
-				Theory:             stage.Hints.Concept,
-				TheoryDetail:       stage.TheoryDetail,
 				Objective:          stage.Objective,
 				Goal:               stage.Goal,
 				PassConditions:     stagePassConditions(stage),
@@ -59,8 +146,22 @@ func (s *Server) handleLessons(w http.ResponseWriter, r *http.Request) {
 			Stages:           stages,
 		})
 	}
+	return out
+}
 
-	respondJSON(w, http.StatusOK, LessonsResponse{Lessons: out})
+type curriculumSectionSpec struct {
+	ID         string
+	Title      string
+	Subtitle   string
+	ComingSoon bool
+}
+
+var curriculumSectionOrder = []curriculumSectionSpec{
+	{ID: "introduction", Title: "Introduction", Subtitle: "OSTEP setup and foundational framing", ComingSoon: true},
+	{ID: "virtualization", Title: "Virtualization", Subtitle: "CPU and memory virtualization lessons"},
+	{ID: "concurrency", Title: "Concurrency", Subtitle: "Threads, wakeups, and interrupt-driven progress"},
+	{ID: "persistence", Title: "Persistence", Subtitle: "Storage and filesystem correctness"},
+	{ID: "security", Title: "Security", Subtitle: "Authentication, access control, and protection", ComingSoon: true},
 }
 
 func convertActionDescriptions(items []lessons.ActionDescription) []LessonActionDescription {
@@ -94,8 +195,30 @@ func describeValidator(v lessons.ValidatorSpec) string {
 			return "Required trace events must appear."
 		}
 		return "Trace must contain: " + strings.Join(v.Values, ", ") + "."
+	case "trace_order":
+		if len(v.Values) == 0 {
+			return "Trace events must follow required order."
+		}
+		return "Trace order must include: " + strings.Join(v.Values, " -> ") + "."
+	case "trace_count_eq":
+		if len(v.Values) == 0 {
+			return "Trace event count must equal required value."
+		}
+		return "Trace count for " + v.Values[0] + " must equal " + trimFloat(v.Number) + "."
+	case "trace_count_lte":
+		if len(v.Values) == 0 {
+			return "Trace event count must be <= required value."
+		}
+		return "Trace count for " + v.Values[0] + " must be <= " + trimFloat(v.Number) + "."
+	case "no_event":
+		if len(v.Values) == 0 {
+			return "Forbidden trace events must not appear."
+		}
+		return "Trace must not contain: " + strings.Join(v.Values, ", ") + "."
 	case "metric_eq":
 		return "Metric " + v.Key + " must equal " + trimFloat(v.Number) + "."
+	case "metric_gte":
+		return "Metric " + v.Key + " must be >= " + trimFloat(v.Number) + "."
 	case "metric_lte":
 		return "Metric " + v.Key + " must be <= " + trimFloat(v.Number) + "."
 	case "fault_eq":

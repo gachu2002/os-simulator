@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l05-throughput-shared-cpu",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe throughput-relevant execution patterns in shared CPU workload.",
+      "goal": "Use trace evidence to explain why work completion rate changes.",
+      "theory_detail": "Throughput measures completed work per time and depends on scheduling overhead and run mix.",
+      "hints": {
+        "nudge": "Inspect completion pace, not just final state.",
+        "concept": "Scheduling overhead and fairness choices both affect throughput.",
+        "explicit": "Run enough ticks to observe steady completion trend before submitting."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose throughput outcome with required completion checks.",
+      "goal": "Meet required completion while evaluating throughput quality.",
+      "hints": {
+        "nudge": "Check completed_processes first.",
+        "concept": "Throughput claims are invalid if workload does not complete.",
+        "explicit": "Continue run until completion target is met, then verify other checks."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning and preserve throughput/completion constraints.",
+      "goal": "Adjust policy within limits and keep required metrics satisfied.",
+      "hints": {
+        "nudge": "Tune conservatively.",
+        "concept": "Throughput improvements can regress fairness or response if over-tuned.",
+        "explicit": "Apply one policy change, rerun, and compare throughput plus completion."
+      }
+    }
+  ]
+}

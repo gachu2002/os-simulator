@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l09-vm-tlb-activity",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe translation activity and reuse windows in memory trace.",
+      "goal": "Identify where repeated references should benefit from cached translations.",
+      "theory_detail": "TLB-like reuse appears when recently translated pages are referenced again before replacement.",
+      "hints": {
+        "nudge": "Look for repeated virtual page references.",
+        "concept": "Reuse windows lower translation overhead and fault exposure.",
+        "explicit": "Annotate repeated accesses and verify improved behavior in counters."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether expected reuse appears in results.",
+      "goal": "Pass required fault/trace checks for locality pattern.",
+      "hints": {
+        "nudge": "Compare early and later accesses.",
+        "concept": "Cold-start misses should decrease on local repetition.",
+        "explicit": "Reset and rerun to confirm lower fault condition in the second half of sequence."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply capacity tuning and validate translation behavior.",
+      "goal": "Preserve or improve fault outcomes with bounded config edits.",
+      "hints": {
+        "nudge": "Tune TLB/frames incrementally.",
+        "concept": "Capacity tuning should reinforce locality benefits.",
+        "explicit": "Change one setting, rerun, and submit when all checks pass."
+      }
+    }
+  ]
+}

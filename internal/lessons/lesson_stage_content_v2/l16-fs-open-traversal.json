@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l16-fs-open-traversal",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe filesystem path traversal on open.",
+      "goal": "Verify fs.path appears before data operations.",
+      "theory_detail": "Open resolves pathname through directories to locate target inode before file I/O proceeds.",
+      "hints": {
+        "nudge": "Check fs.path event early in trace.",
+        "concept": "Path resolution is prerequisite to read/write mapping.",
+        "explicit": "Run until open path traversal is visible, then verify ordering relative to read/write."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose traversal correctness with runtime outcome checks.",
+      "goal": "Pass path and completion-oriented checks.",
+      "hints": {
+        "nudge": "Do not ignore process completion.",
+        "concept": "Correct traversal should lead into successful syscall flow.",
+        "explicit": "Continue run until process completes and all trace requirements are present."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply timing/config tuning without breaking traversal guarantees.",
+      "goal": "Maintain required traversal checks under bounded edits.",
+      "hints": {
+        "nudge": "Retest traversal after each tune.",
+        "concept": "Timing changes must not alter namespace correctness.",
+        "explicit": "Apply one change, rerun, and confirm fs.path ordering still passes."
+      }
+    }
+  ]
+}

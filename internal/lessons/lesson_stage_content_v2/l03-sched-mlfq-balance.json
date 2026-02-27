@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l03-sched-mlfq-balance",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe MLFQ queue-driven dispatch behavior.",
+      "goal": "Find trace evidence that service order responds to queue priority.",
+      "theory_detail": "MLFQ prioritizes higher queues and adjusts placement as jobs consume CPU.",
+      "hints": {
+        "nudge": "Inspect repeated dispatch decisions.",
+        "concept": "MLFQ behavior depends on observed CPU usage, not static labels.",
+        "explicit": "Run until you can identify at least two queue-influenced dispatch choices."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Validate MLFQ behavior while preserving full completion.",
+      "goal": "Pass trace and completion checks for MLFQ stage.",
+      "hints": {
+        "nudge": "Do not skip completion validation.",
+        "concept": "Adaptive priority is useful only if all work still progresses.",
+        "explicit": "Continue run until both jobs complete, then submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning and compare cadence with prior MLFQ stages.",
+      "goal": "Adjust policy settings within limits and keep checks green.",
+      "hints": {
+        "nudge": "Tune once, then measure.",
+        "concept": "Controlled tuning reveals policy sensitivity without breaking invariants.",
+        "explicit": "Apply update, rerun workload, and verify completion plus trace requirements."
+      }
+    }
+  ]
+}

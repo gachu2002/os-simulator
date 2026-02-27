@@ -1,0 +1,28 @@
+{
+  "id": "l15c-blocked-progress-guarantee",
+  "difficulty": "advanced",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "threads-intro"
+  ],
+  "learn": {
+    "core_idea": "Liveness means blocked work eventually resumes and completes despite timing changes.",
+    "mechanism_steps": [
+      "Run workload with blocking phases.",
+      "Tune device latencies within limits.",
+      "Ensure wakeups still occur.",
+      "Confirm completion remains true."
+    ],
+    "worked_example": "Higher latency shifts timing but should not eliminate eventual completion.",
+    "common_mistakes": [
+      "Equating slower completion with deadlock.",
+      "Over-tuning beyond config budget.",
+      "Ignoring wakeup evidence."
+    ],
+    "pre_challenge_checklist": [
+      "I know completion is mandatory.",
+      "I can tune latency one change at a time.",
+      "I can verify wakeup and exit path."
+    ]
+  }
+}

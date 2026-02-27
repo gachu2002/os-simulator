@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l15c-blocked-progress-guarantee",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe blocked process progression back to runnable state.",
+      "goal": "Verify every blocked phase has a wakeup path.",
+      "theory_detail": "Liveness in blocking workloads requires eventual wakeup and scheduler service.",
+      "hints": {
+        "nudge": "Trace each blocked interval.",
+        "concept": "A blocked state is temporary only if wake conditions are met.",
+        "explicit": "Match each block with corresponding wakeup and resumed dispatch event."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether blocked progression reaches completion.",
+      "goal": "Pass liveness checks with required completion target.",
+      "hints": {
+        "nudge": "Confirm final exit event.",
+        "concept": "Liveness proof requires eventual completion, not just wakeup visibility.",
+        "explicit": "Run until process exits and verify completion metric and trace requirements."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune device latencies and preserve liveness guarantees.",
+      "goal": "Apply bounded config edits while keeping blocked-progress checks passing.",
+      "hints": {
+        "nudge": "Use one latency tweak per attempt.",
+        "concept": "Latency affects timing but should not eliminate eventual progress.",
+        "explicit": "Apply one change, run full workload, and submit only if completion still passes."
+      }
+    }
+  ]
+}

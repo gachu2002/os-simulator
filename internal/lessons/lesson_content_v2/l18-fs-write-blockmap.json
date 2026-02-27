@@ -1,0 +1,28 @@
+{
+  "id": "l18-fs-write-blockmap",
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "file-implementation"
+  ],
+  "learn": {
+    "core_idea": "Writes follow the same mapping pipeline and can alter persistent structure state.",
+    "mechanism_steps": [
+      "Open file and resolve path.",
+      "Compute write target blocks.",
+      "Map/update physical block references.",
+      "Complete write and return to user."
+    ],
+    "worked_example": "Trace emits sys.write and fs.blockmap while completion remains deterministic.",
+    "common_mistakes": [
+      "Treating write path as read-equivalent without side effects.",
+      "Ignoring mapping events in trace.",
+      "Failing to validate completion metric."
+    ],
+    "pre_challenge_checklist": [
+      "I can confirm sys.write event.",
+      "I can verify fs.blockmap appears.",
+      "I can ensure run exits successfully."
+    ]
+  }
+}

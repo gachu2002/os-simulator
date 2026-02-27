@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l20c-fs-trace-audit",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe full trace evidence for extended filesystem scenario.",
+      "goal": "Identify all required audit events before submission.",
+      "theory_detail": "Auditability requires matching correctness claims to concrete trace evidence.",
+      "hints": {
+        "nudge": "List required events explicitly.",
+        "concept": "Trace audit connects mechanism to correctness.",
+        "explicit": "Run scenario and mark each required event as it appears."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose audit gaps and invariant outcomes.",
+      "goal": "Pass fs_ok, completion, and trace coverage checks together.",
+      "hints": {
+        "nudge": "Find first missing requirement.",
+        "concept": "One missing audit event can invalidate correctness argument.",
+        "explicit": "Reset, rerun, and verify checklist item-by-item before submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply bounded tuning and preserve full audit pass state.",
+      "goal": "Keep all audit validators passing after allowed edits.",
+      "hints": {
+        "nudge": "Protect audit coverage while tuning.",
+        "concept": "Optimization is acceptable only if correctness evidence remains complete.",
+        "explicit": "Apply one tuning change, rerun full scenario, and verify every validator."
+      }
+    }
+  ]
+}

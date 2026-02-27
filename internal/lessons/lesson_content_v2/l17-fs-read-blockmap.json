@@ -1,0 +1,28 @@
+{
+  "id": "l17-fs-read-blockmap",
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "file-implementation"
+  ],
+  "learn": {
+    "core_idea": "Reads require translating logical offsets through file metadata to physical block mappings.",
+    "mechanism_steps": [
+      "Resolve pathname to inode.",
+      "Compute logical block range.",
+      "Map logical blocks to physical storage blocks.",
+      "Issue read against mapped blocks."
+    ],
+    "worked_example": "Trace shows fs.path then fs.blockmap as read length increases.",
+    "common_mistakes": [
+      "Assuming contiguous physical layout.",
+      "Ignoring mapping step in diagnosis.",
+      "Checking only syscall return without trace evidence."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify fs.blockmap events.",
+      "I can relate mapping to read size.",
+      "I can verify path resolution first."
+    ]
+  }
+}

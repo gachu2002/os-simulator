@@ -1,0 +1,29 @@
+{
+  "id": "l11b-vm-locality-window",
+  "difficulty": "advanced",
+  "estimated_minutes": 22,
+  "chapter_refs": [
+    "vm-tlbs",
+    "vm-paging"
+  ],
+  "learn": {
+    "core_idea": "Locality windows reduce misses when working sets fit available cache/frame capacity.",
+    "mechanism_steps": [
+      "Identify hot pages in short interval.",
+      "Allocate enough capacity to retain hot set.",
+      "Observe reduced repeated misses.",
+      "Validate improvement under deterministic replay."
+    ],
+    "worked_example": "Increasing frames/TLB entries can preserve hot-set translations and lower faults.",
+    "common_mistakes": [
+      "Tuning multiple knobs without measuring impact.",
+      "Confusing locality gain with random variation.",
+      "Ignoring baseline comparison."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify hot access subset.",
+      "I can choose one tuning change at a time.",
+      "I can confirm fault_lte improvement."
+    ]
+  }
+}

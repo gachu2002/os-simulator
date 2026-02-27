@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l11c-vm-fault-burst-diagnose",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe clustered fault bursts in constrained memory run.",
+      "goal": "Locate burst intervals and correlate them with access churn.",
+      "theory_detail": "Fault bursts emerge when active references exceed available resident capacity.",
+      "hints": {
+        "nudge": "Look for contiguous mem.fault stretches.",
+        "concept": "Burstiness is a signal of working-set mismatch.",
+        "explicit": "Identify burst segment in trace, then map accesses causing it."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose baseline burst severity and completion impact.",
+      "goal": "Pass required baseline checks before mitigation tuning.",
+      "hints": {
+        "nudge": "Check both fault and completion outputs.",
+        "concept": "A mitigation is only valid if progress still completes.",
+        "explicit": "Run to completion, then inspect total not-present faults and trace evidence."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply mitigation tuning and reduce burst pressure.",
+      "goal": "Reduce faults within limits while preserving completion checks.",
+      "hints": {
+        "nudge": "Tune capacity incrementally.",
+        "concept": "Burst reduction should be measurable in fault counters.",
+        "explicit": "Change one config setting, rerun full scenario, and confirm fault_lte plus completion."
+      }
+    }
+  ]
+}

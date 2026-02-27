@@ -1,0 +1,28 @@
+{
+  "id": "l01-sched-rr-basics",
+  "difficulty": "foundation",
+  "estimated_minutes": 20,
+  "chapter_refs": [
+    "cpu-sched"
+  ],
+  "learn": {
+    "core_idea": "Round Robin improves responsiveness by preempting jobs after a fixed quantum and rotating CPU access.",
+    "mechanism_steps": [
+      "Scheduler selects a ready process.",
+      "Process executes until quantum expires or it blocks/exits.",
+      "Timer preemption returns running process to ready queue.",
+      "Dispatcher selects next ready process in rotation."
+    ],
+    "worked_example": "With two equal CPU-bound jobs, dispatch alternates repeatedly before both terminate.",
+    "common_mistakes": [
+      "Assuming more context switches always improve total throughput.",
+      "Checking only completion count without trace cadence.",
+      "Ignoring response time when evaluating fairness."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify proc.dispatch and proc.compute events.",
+      "I can explain why proc.preempt appears.",
+      "I know what completion and response metrics indicate."
+    ]
+  }
+}

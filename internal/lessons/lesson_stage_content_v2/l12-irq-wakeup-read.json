@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l12-irq-wakeup-read",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe read syscall block and IRQ wakeup path.",
+      "goal": "Confirm trap->io.submit->wakeup->return sequence in trace.",
+      "theory_detail": "Blocking read relinquishes CPU until device completion interrupt marks process runnable again.",
+      "hints": {
+        "nudge": "Track control transfer events.",
+        "concept": "I/O progress is asynchronous; wakeup is required before user execution resumes.",
+        "explicit": "Find trap.enter, io.submit, proc.wakeup, and trap.return in order."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose completion behavior for blocked read flow.",
+      "goal": "Pass wakeup trace and completion checks together.",
+      "hints": {
+        "nudge": "Do not stop after seeing wakeup once.",
+        "concept": "Wakeup must lead to resumed execution and eventual exit.",
+        "explicit": "Run additional steps until completion metric reaches target, then submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune latency while preserving read wakeup correctness.",
+      "goal": "Keep wakeup/order checks passing after config edits.",
+      "hints": {
+        "nudge": "Adjust latency one setting at a time.",
+        "concept": "Timing changes should not break control-flow correctness.",
+        "explicit": "Apply one latency change, rerun, and verify ordered wakeup path plus completion."
+      }
+    }
+  ]
+}

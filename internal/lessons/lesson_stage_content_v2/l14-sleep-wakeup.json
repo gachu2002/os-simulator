@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l14-sleep-wakeup",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe sleep-induced blocking and timed wakeup.",
+      "goal": "Confirm sys.sleep and proc.wakeup appear in correct progression.",
+      "theory_detail": "Sleep sets blocked-until tick; process cannot run again before wake condition is met.",
+      "hints": {
+        "nudge": "Check blocked and wake trace events.",
+        "concept": "Sleep delays execution without consuming process run time.",
+        "explicit": "Run until wakeup event appears after sleep request."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose completion after sleep delay.",
+      "goal": "Pass wakeup and completion validators together.",
+      "hints": {
+        "nudge": "Wait for resume then completion.",
+        "concept": "Wakeup is an intermediate state, not final success.",
+        "explicit": "Continue steps after wakeup until process exits and metrics update."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply timing tuning and keep liveness guarantees.",
+      "goal": "Use config limits and keep wakeup/completion checks green.",
+      "hints": {
+        "nudge": "Tune cautiously.",
+        "concept": "Liveness should hold across timing variations in deterministic simulation.",
+        "explicit": "Apply one latency change, rerun, and verify wakeup + completion again."
+      }
+    }
+  ]
+}

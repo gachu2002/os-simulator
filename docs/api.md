@@ -3,9 +3,10 @@
 ## Base Endpoints
 
 - `GET /healthz`
-- `GET /lessons`
+- `GET /curriculum`
+- `GET /lessons/{lessonID}/learn`
 - `POST /challenges/start`
-- `POST /challenges/grade`
+- `POST /challenges/submit`
 - `WS /ws/{sessionID}`
 
 ## Request/Response Notes
@@ -28,11 +29,17 @@ All HTTP errors return:
 
 `X-Request-ID` is echoed in response headers; clients may send their own.
 
-## Lessons List
+## Curriculum
 
-### `GET /lessons`
+### `GET /curriculum`
 
-Returns lesson summaries with section metadata (`section_id`, `section_title`, `difficulty`, `estimated_minutes`, `chapter_refs`) and stage metadata (`index`, `id`, `title`, `theory`, `theory_detail`, `objective`, `goal`, `pass_conditions`, `prerequisites`, `allowed_commands`, `action_descriptions`, `expected_visual_cues`, `limits`) plus progress status (`attempts`, `completed`, `unlocked`). Active section ids are `virtualization`, `concurrency`, and `persistence`. `allowed_commands` may include tuning actions such as `set_frames`, `set_tlb_entries`, `set_disk_latency`, and `set_terminal_latency`. `limits` includes `max_steps`, `max_policy_changes`, and `max_config_changes`. Use optional query param `learner_id` to scope unlock/progress per learner. Default catalog currently ships 28 lessons with 3 stages each.
+Returns section-first curriculum payload for home page rendering. Response includes ordered sections (`id`, `title`, `subtitle`, `order`, `coming_soon`) and embedded lesson summaries. For active sections, progress totals are included (`completed_stages`, `total_stages`). Supports optional `learner_id` query param.
+
+## Lesson Learn
+
+### `GET /lessons/{lessonID}/learn`
+
+Returns theory-first lesson payload intended for Learn page rendering. Includes lesson metadata and per-stage learn blocks (`theory`, `theory_detail`, `objective`, `goal`, prerequisites, expected visual cues). This endpoint excludes challenge control metadata.
 
 ## Challenge Start
 
@@ -50,9 +57,11 @@ Body:
 
 Returns lesson-stage attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits including optional `max_config_changes`).
 
-## Challenge Grade
+Also includes `goal` and `pass_conditions` so the challenge page can render submit checklist before grading.
 
-### `POST /challenges/grade`
+## Challenge Submit
+
+### `POST /challenges/submit`
 
 Body:
 
@@ -64,6 +73,8 @@ Body:
 ```
 
 Grades the current lesson-stage session state and returns pass/fail, hint progression fields, output snapshot fields, completion analytics, and per-validator check results in `validator_results`. `learner_id` must match the learner that started the attempt.
+
+Each validator result includes `expected` and `actual` fields for expected-vs-actual rendering.
 
 ## WebSocket Stream
 

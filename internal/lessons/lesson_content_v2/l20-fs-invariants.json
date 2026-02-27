@@ -1,0 +1,29 @@
+{
+  "id": "l20-fs-invariants",
+  "difficulty": "advanced",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "file-journaling",
+    "file-integrity"
+  ],
+  "learn": {
+    "core_idea": "Persistence correctness is defined by invariants that must hold after operations complete.",
+    "mechanism_steps": [
+      "Run mixed filesystem operations.",
+      "Maintain metadata/data consistency assumptions.",
+      "Evaluate invariants at end of run.",
+      "Treat invariant failure as correctness bug, not performance issue."
+    ],
+    "worked_example": "Run may complete, but fs_ok must also remain true for pass.",
+    "common_mistakes": [
+      "Assuming completion implies correctness.",
+      "Ignoring fs_ok status.",
+      "Focusing only on latency differences."
+    ],
+    "pre_challenge_checklist": [
+      "I know fs_ok is mandatory.",
+      "I can distinguish correctness from speed.",
+      "I can inspect trace when invariants fail."
+    ]
+  }
+}

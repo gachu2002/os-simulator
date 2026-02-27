@@ -1,0 +1,28 @@
+{
+  "id": "l14-sleep-wakeup",
+  "difficulty": "foundation",
+  "estimated_minutes": 16,
+  "chapter_refs": [
+    "threads-intro"
+  ],
+  "learn": {
+    "core_idea": "Sleep blocks execution until a deterministic wake tick, modeling timed waiting behavior.",
+    "mechanism_steps": [
+      "Sleep syscall records wake target tick.",
+      "Process enters blocked state.",
+      "Clock advances under scheduler control.",
+      "Wake event returns process to ready/running."
+    ],
+    "worked_example": "A sleep-then-compute program resumes exactly after configured delay.",
+    "common_mistakes": [
+      "Assuming sleep consumes CPU ticks for the process.",
+      "Ignoring blocked-until semantics.",
+      "Submitting without checking wake event."
+    ],
+    "pre_challenge_checklist": [
+      "I can identify sys.sleep and proc.wakeup.",
+      "I can explain blocked_until behavior.",
+      "I can verify completion after wakeup."
+    ]
+  }
+}

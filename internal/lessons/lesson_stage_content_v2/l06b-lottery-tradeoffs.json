@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l06b-lottery-tradeoffs",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Study fairness tradeoffs through current proxy scheduler behavior.",
+      "goal": "Interpret fairness evidence while lottery policy remains theory-focused.",
+      "theory_detail": "Lottery scheduling concepts are taught here; runtime challenge uses proxy fairness checks until lottery is implemented.",
+      "hints": {
+        "nudge": "Use fairness metrics carefully.",
+        "concept": "This lesson emphasizes proportional-share reasoning, even with current engine limits.",
+        "explicit": "Compare fairness metric and trace cadence to approximate expected lottery tradeoffs."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose fairness and completion under proxy policy conditions.",
+      "goal": "Pass current checks while explaining expected lottery behavior conceptually.",
+      "hints": {
+        "nudge": "Do not ignore completion target.",
+        "concept": "Fairness interpretation is meaningful only when workload completes.",
+        "explicit": "Run to completion and validate fairness-related checks before submit."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Apply tuning and evaluate fairness impact within limits.",
+      "goal": "Use bounded policy changes to improve fairness outcomes without regressions.",
+      "hints": {
+        "nudge": "Tune one parameter at a time.",
+        "concept": "Fairness tradeoffs are sensitive to scheduling configuration.",
+        "explicit": "Apply one policy change, rerun, and compare fairness plus completion."
+      }
+    }
+  ]
+}

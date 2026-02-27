@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l06c-quantum-response-tuning",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe baseline response profile before tuning.",
+      "goal": "Establish baseline trace and metric evidence for later comparison.",
+      "theory_detail": "Baseline measurement is required to justify tuning decisions.",
+      "hints": {
+        "nudge": "Capture baseline first.",
+        "concept": "Tuning without baseline makes improvement claims unreliable.",
+        "explicit": "Run default configuration and note response/completion metrics."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose response bottlenecks from baseline run.",
+      "goal": "Identify why current config misses or meets response target.",
+      "hints": {
+        "nudge": "Inspect first-dispatch timing.",
+        "concept": "Response bottlenecks appear in early scheduling decisions.",
+        "explicit": "Compare first service times and confirm metric values before tuning."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune quantum/policy to hit response target under strict limits.",
+      "goal": "Meet response and completion checks while staying within policy-change budget.",
+      "hints": {
+        "nudge": "Make minimal tuning changes.",
+        "concept": "Effective tuning improves target metric without breaking completion guarantees.",
+        "explicit": "Apply one change, rerun full workload, and submit only when all checks pass."
+      }
+    }
+  ]
+}

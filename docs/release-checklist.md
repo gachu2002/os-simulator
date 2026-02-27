@@ -20,11 +20,11 @@
 - [ ] lesson pack analytics reports 60/60 stage completion in smoke run
 - [ ] `cmd/server` starts and responds on `/healthz`
 - [ ] web build artifact (`web/dist`) is generated and deployable
-- [ ] challenge API paths (`/lessons`, `/challenges/start`, `/challenges/grade`) respond successfully
+- [ ] challenge API paths (`/curriculum`, `/lessons/{lessonID}/learn`, `/challenges/start`, `/challenges/submit`) respond successfully
 
 ## Deployment Smoke (Hosted)
 
-- [ ] Backend hosted URL passes `/healthz`, `/lessons`, `/challenges/start`, and `/challenges/grade` checks
+- [ ] Backend hosted URL passes `/healthz`, `/curriculum`, `/challenges/start`, and `/challenges/submit` checks
 - [ ] Frontend hosted URL serves the app shell successfully
 - [ ] GitHub workflow `deploy-smoke` passes on `main`
 

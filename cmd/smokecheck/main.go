@@ -34,15 +34,15 @@ func main() {
 	if err := getOK(client, *backend+"/healthz"); err != nil {
 		fatalf("healthz failed: %v", err)
 	}
-	if err := getOK(client, *backend+"/lessons"); err != nil {
-		fatalf("lessons failed: %v", err)
+	if err := getOK(client, *backend+"/curriculum"); err != nil {
+		fatalf("curriculum failed: %v", err)
 	}
 	attemptID, sessionID, err := startChallenge(client, *backend)
 	if err != nil {
 		fatalf("challenge start failed: %v", err)
 	}
-	if err := postOK(client, *backend+"/challenges/grade", map[string]any{"attempt_id": attemptID}); err != nil {
-		fatalf("challenge grade failed: %v", err)
+	if err := postOK(client, *backend+"/challenges/submit", map[string]any{"attempt_id": attemptID}); err != nil {
+		fatalf("challenge submit failed: %v", err)
 	}
 	if err := wsSmoke(*backend, sessionID); err != nil {
 		fatalf("websocket smoke failed: %v", err)

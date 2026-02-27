@@ -20,6 +20,8 @@ type ChallengeStartResponse struct {
 	StageTitle      string             `json:"stage_title"`
 	Module          string             `json:"module"`
 	Objective       string             `json:"objective"`
+	Goal            string             `json:"goal,omitempty"`
+	PassConditions  []string           `json:"pass_conditions,omitempty"`
 	AllowedCommands []string           `json:"allowed_commands"`
 	Limits          ChallengeLimitsDTO `json:"limits"`
 }
@@ -30,11 +32,13 @@ type ChallengeGradeRequest struct {
 }
 
 type ValidatorResultDTO struct {
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Key     string `json:"key,omitempty"`
-	Passed  bool   `json:"passed"`
-	Message string `json:"message,omitempty"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Key      string `json:"key,omitempty"`
+	Passed   bool   `json:"passed"`
+	Message  string `json:"message,omitempty"`
+	Expected string `json:"expected,omitempty"`
+	Actual   string `json:"actual,omitempty"`
 }
 
 type ChallengeGradeResponse struct {
@@ -43,6 +47,9 @@ type ChallengeGradeResponse struct {
 	StageIndex       int                    `json:"stage_index"`
 	Passed           bool                   `json:"passed"`
 	FeedbackKey      string                 `json:"feedback_key"`
+	Objective        string                 `json:"objective"`
+	Goal             string                 `json:"goal,omitempty"`
+	PassConditions   []string               `json:"pass_conditions,omitempty"`
 	Hint             string                 `json:"hint,omitempty"`
 	HintLevel        int                    `json:"hint_level,omitempty"`
 	Output           LessonOutputDTO        `json:"output"`

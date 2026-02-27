@@ -1,0 +1,36 @@
+{
+  "lesson_id": "l11b-vm-locality-window",
+  "stages": [
+    {
+      "id": "s1",
+      "objective": "Observe locality windows in repeated access pattern.",
+      "goal": "Identify hot-page reuse opportunities in trace.",
+      "theory_detail": "Temporal locality means recently used pages are likely to be used again soon.",
+      "hints": {
+        "nudge": "Find repeated page references close together.",
+        "concept": "Locality benefits appear when capacity preserves hot set.",
+        "explicit": "Mark hot pages and confirm whether revisits hit or fault."
+      }
+    },
+    {
+      "id": "s2",
+      "objective": "Diagnose whether baseline config captures locality effectively.",
+      "goal": "Pass baseline checks and explain observed reuse behavior.",
+      "hints": {
+        "nudge": "Compare early misses to later accesses.",
+        "concept": "A good locality window reduces later misses.",
+        "explicit": "Run full scenario and compare hit/fault trend over time."
+      }
+    },
+    {
+      "id": "s3",
+      "objective": "Tune memory parameters to improve locality outcome.",
+      "goal": "Satisfy lte fault check using bounded config changes.",
+      "hints": {
+        "nudge": "Increase capacity gradually.",
+        "concept": "Small capacity changes can keep the hot working set resident.",
+        "explicit": "Apply one frame/TLB change, rerun, and submit when fault_lte passes."
+      }
+    }
+  ]
+}

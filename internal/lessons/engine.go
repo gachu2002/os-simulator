@@ -159,7 +159,7 @@ func (e *Engine) GradeStage(prepared PreparedStage, output StageOutput) StageRes
 	passed := firstFailedName == ""
 	prog := e.progress.Record(prepared.LessonID, stage.ID, passed)
 	if !passed {
-		hintLevel, hint := hintForAttempt(stage.Hints, prog.Attempts)
+		hintLevel, hint := hintForFailure(stage, firstFailedName, prog.Attempts)
 		return StageResult{
 			Passed:           false,
 			FeedbackKey:      "validator." + firstFailedName,
@@ -176,6 +176,15 @@ func (e *Engine) GradeStage(prepared PreparedStage, output StageOutput) StageRes
 		Output:           output,
 		ValidatorResults: results,
 	}
+}
+
+func hintForFailure(stage Stage, validatorName string, attempts int) (int, string) {
+	for _, entry := range stage.ValidatorHints {
+		if entry.Validator == validatorName {
+			return hintForAttempt(entry.Hints, attempts)
+		}
+	}
+	return hintForAttempt(stage.Hints, attempts)
 }
 
 func (e *Engine) isPrerequisiteCompleted(key string) bool {

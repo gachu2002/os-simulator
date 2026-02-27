@@ -1,6 +1,10 @@
 package lessons
 
-import "os-simulator-plan/internal/sim"
+import (
+	"slices"
+
+	"os-simulator-plan/internal/sim"
+)
 
 type cpuLessonSpec struct {
 	id    string
@@ -30,54 +34,36 @@ type ioLessonSpec struct {
 }
 
 func DefaultCatalog() map[string]Lesson {
-	lessons := make([]Lesson, 0, 28)
-
-	cpuSpecs := []cpuLessonSpec{
-		{id: "l01-sched-rr-basics", title: "Round Robin Dispatch Basics", seed: 11, p1: "COMPUTE 4; EXIT", p2: "COMPUTE 4; EXIT", steps: 20},
-		{id: "l02-sched-fifo-baseline", title: "FIFO Baseline and Ordering", seed: 12, p1: "COMPUTE 5; EXIT", p2: "COMPUTE 2; EXIT", steps: 20},
-		{id: "l03-sched-mlfq-balance", title: "MLFQ Fairness and Balance", seed: 13, p1: "COMPUTE 6; EXIT", p2: "COMPUTE 6; EXIT", steps: 24},
-		{id: "l04-response-under-rr", title: "Response Time under RR", seed: 14, p1: "COMPUTE 3; EXIT", p2: "COMPUTE 7; EXIT", steps: 22},
-		{id: "l05-throughput-shared-cpu", title: "Throughput on Shared CPU", seed: 15, p1: "COMPUTE 4; EXIT", p2: "COMPUTE 4; EXIT", steps: 18},
-		{id: "l06-preemption-check", title: "Preemption Behavior Check", seed: 16, p1: "COMPUTE 5; EXIT", p2: "COMPUTE 5; EXIT", steps: 24},
-		{id: "l06b-lottery-tradeoffs", title: "Fairness Tradeoffs in Shared CPU", seed: 17, p1: "COMPUTE 8; EXIT", p2: "COMPUTE 2; EXIT", steps: 26},
-		{id: "l06c-quantum-response-tuning", title: "Quantum Tuning and Response", seed: 18, p1: "COMPUTE 6; EXIT", p2: "COMPUTE 6; EXIT", steps: 24},
+	content, err := loadDefaultCatalogContent()
+	if err != nil {
+		panic(err)
 	}
-	appendCPULessons(&lessons, cpuSpecs)
-
-	memorySpecs := []memoryLessonSpec{
-		{id: "l07-vm-fault-sequence", title: "Page Fault Sequence", seed: 21, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x0 r; EXIT", steps: 12, faults: 4},
-		{id: "l08-vm-pressure-repeat", title: "Frame Pressure with Repeated Access", seed: 22, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x3000 r; EXIT", steps: 14, faults: 4},
-		{id: "l09-vm-tlb-activity", title: "TLB Hit and Miss Activity", seed: 23, frames: 3, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x0 r; ACCESS 0x1000 r; EXIT", steps: 12, faults: 2},
-		{id: "l10-vm-replacement-fifo", title: "FIFO Page Replacement", seed: 24, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; EXIT", steps: 10, faults: 3},
-		{id: "l11-vm-mixed-access", title: "Mixed Read/Write Access", seed: 25, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 w; ACCESS 0x2000 r; EXIT", steps: 10, faults: 3},
-		{id: "l11b-vm-locality-window", title: "Locality Window and Reuse", seed: 26, frames: 3, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x1000 r; ACCESS 0x0 r; EXIT", steps: 14, faults: 3},
-		{id: "l11c-vm-fault-burst-diagnose", title: "Fault Burst Diagnosis", seed: 27, frames: 2, program: "ACCESS 0x0 r; ACCESS 0x1000 r; ACCESS 0x2000 r; ACCESS 0x3000 r; ACCESS 0x0 r; EXIT", steps: 16, faults: 5},
+	lessonContent, err := loadLessonContentV2()
+	if err != nil {
+		panic(err)
 	}
-	appendMemoryLessons(&lessons, memorySpecs, "l06c-quantum-response-tuning:s3")
-
-	concurrencySpecs := []ioLessonSpec{
-		{id: "l12-irq-wakeup-read", title: "Read Syscall IRQ Wakeup", seed: 31, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; COMPUTE 1; EXIT", steps: 14},
-		{id: "l13-terminal-write-irq", title: "Terminal Write Interrupt Path", seed: 32, program: "SYSCALL open /docs/readme.txt; SYSCALL write 3; COMPUTE 1; EXIT", steps: 10},
-		{id: "l14-sleep-wakeup", title: "Sleep and Wakeup Timing", seed: 33, program: "SYSCALL sleep 2; COMPUTE 1; EXIT", steps: 10},
-		{id: "l15-mixed-blocking", title: "Mixed Blocking Workload", seed: 34, program: "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL sleep 2; EXIT", steps: 16},
-		{id: "l15b-irq-interleave-order", title: "IRQ Interleave Event Order", seed: 35, program: "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL write 2; COMPUTE 1; EXIT", steps: 16},
-		{id: "l15c-blocked-progress-guarantee", title: "Blocked Progress Guarantee", seed: 36, program: "SYSCALL sleep 2; SYSCALL read 2; COMPUTE 2; EXIT", steps: 18},
+	stageContent, err := loadLessonStageContentV2()
+	if err != nil {
+		panic(err)
 	}
-	appendConcurrencyLessons(&lessons, concurrencySpecs, "l11c-vm-fault-burst-diagnose:s3")
 
-	persistenceSpecs := []ioLessonSpec{
-		{id: "l16-fs-open-traversal", title: "Filesystem Path Traversal", seed: 41, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL exit", steps: 12},
-		{id: "l17-fs-read-blockmap", title: "Read Path Block Mapping", seed: 42, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL exit", steps: 14},
-		{id: "l18-fs-write-blockmap", title: "Write Path Block Mapping", seed: 43, program: "SYSCALL open /docs/readme.txt; SYSCALL write 4; SYSCALL exit", steps: 14},
-		{id: "l19-fs-read-write", title: "Read/Write Sequence", seed: 44, program: "SYSCALL open /docs/readme.txt; SYSCALL read 4; SYSCALL write 3; SYSCALL exit", steps: 16},
-		{id: "l20-fs-invariants", title: "Filesystem Invariants", seed: 45, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL write 2; SYSCALL exit", steps: 16},
-		{id: "l20b-fs-latency-compare", title: "Persistence Latency Comparison", seed: 46, program: "SYSCALL open /docs/readme.txt; SYSCALL read 3; SYSCALL write 3; SYSCALL exit", steps: 18},
-		{id: "l20c-fs-trace-audit", title: "Filesystem Trace Audit", seed: 47, program: "SYSCALL open /docs/readme.txt; SYSCALL read 2; SYSCALL write 2; SYSCALL read 1; SYSCALL exit", steps: 18},
-	}
-	appendPersistenceLessons(&lessons, persistenceSpecs, "l15c-blocked-progress-guarantee:s3")
+	lessons := make([]Lesson, 0, len(content.CPU)+len(content.Memory.Lessons)+len(content.Concurrency.Lessons)+len(content.Persistence.Lessons))
+
+	appendCPULessons(&lessons, content.CPU)
+	appendMemoryLessons(&lessons, content.Memory.Lessons, content.Memory.ModulePrerequisite)
+	appendConcurrencyLessons(&lessons, content.Concurrency.Lessons, content.Concurrency.ModulePrerequisite)
+	appendPersistenceLessons(&lessons, content.Persistence.Lessons, content.Persistence.ModulePrerequisite)
 
 	for idx := range lessons {
-		applyChallengeMetadata(&lessons[idx])
+		record, ok := lessonContent[lessons[idx].ID]
+		if !ok {
+			panic("missing lesson content for " + lessons[idx].ID)
+		}
+		overrides, ok := stageContent[lessons[idx].ID]
+		if !ok {
+			panic("missing stage content for " + lessons[idx].ID)
+		}
+		applyChallengeMetadata(&lessons[idx], record, overrides)
 	}
 
 	out := make(map[string]Lesson, len(lessons))
@@ -366,70 +352,85 @@ func prereqList(prereq string) []string {
 	return []string{prereq}
 }
 
-func applyChallengeMetadata(lesson *Lesson) {
-	applyLessonMetadata(lesson)
+func applyChallengeMetadata(
+	lesson *Lesson,
+	lessonContent lessonContentRecord,
+	stageContent map[string]lessonStageContentStage,
+) {
+	applyLessonMetadata(lesson, lessonContent)
 
 	for idx := range lesson.Stages {
 		stage := &lesson.Stages[idx]
-		if stage.Objective == "" {
-			stage.Objective = defaultObjectiveForStage(lesson.Module, stage.ID)
+		applyStageV2LearnContent(stage, lessonContent, stageContent)
+		stage.Bootstrap = defaultBootstrapCommands(stage.Commands)
+		stage.AllowedCmds = defaultAllowedCommandsForStage(lesson.Module, stage.ID)
+		stage.Limits.MaxSteps = defaultMaxStepsForStage(lesson.Module, stage.Commands)
+		if allowsPolicy(stage.AllowedCmds) && stage.ID == "s3" {
+			stage.Limits.MaxPolicyChanges = 3
+		} else if allowsPolicy(stage.AllowedCmds) {
+			stage.Limits.MaxPolicyChanges = 1
+		} else {
+			stage.Limits.MaxPolicyChanges = 0
 		}
-		if stage.Goal == "" {
-			stage.Goal = stage.Objective
+		if allowsConfig(stage.AllowedCmds) && stage.ID == "s3" {
+			stage.Limits.MaxConfigChanges = 2
+		} else {
+			stage.Limits.MaxConfigChanges = 0
 		}
-		if stage.TheoryDetail == "" {
-			stage.TheoryDetail = stage.Hints.Concept
-		}
-		if len(stage.Bootstrap) == 0 {
-			stage.Bootstrap = defaultBootstrapCommands(stage.Commands)
-		}
-		if len(stage.AllowedCmds) == 0 {
-			stage.AllowedCmds = defaultAllowedCommandsForStage(lesson.Module, stage.ID)
-		}
-		if stage.Limits.MaxSteps <= 0 {
-			stage.Limits.MaxSteps = defaultMaxStepsForStage(lesson.Module, stage.Commands)
-		}
-		if stage.Limits.MaxPolicyChanges <= 0 {
-			if allowsPolicy(stage.AllowedCmds) && stage.ID == "s3" {
-				stage.Limits.MaxPolicyChanges = 3
-			} else if allowsPolicy(stage.AllowedCmds) {
-				stage.Limits.MaxPolicyChanges = 1
-			} else {
-				stage.Limits.MaxPolicyChanges = 0
-			}
-		}
-		if stage.Limits.MaxConfigChanges <= 0 {
-			if allowsConfig(stage.AllowedCmds) && stage.ID == "s3" {
-				stage.Limits.MaxConfigChanges = 2
-			} else {
-				stage.Limits.MaxConfigChanges = 0
-			}
-		}
-		if len(stage.ActionDescriptions) == 0 {
-			stage.ActionDescriptions = defaultActionDescriptions(stage.AllowedCmds)
-		}
-		if len(stage.ExpectedVisualCues) == 0 {
-			stage.ExpectedVisualCues = defaultExpectedVisualCues(stage.Validators)
+		stage.ActionDescriptions = defaultActionDescriptions(stage.AllowedCmds)
+		stage.ExpectedVisualCues = defaultExpectedVisualCues(stage.Validators)
+		if len(stage.ValidatorHints) == 0 {
+			stage.ValidatorHints = defaultValidatorHints(lesson.Module, stage.Validators, stage.Hints)
 		}
 	}
 }
 
-func applyLessonMetadata(lesson *Lesson) {
+func applyStageV2LearnContent(
+	stage *Stage,
+	lessonContent lessonContentRecord,
+	stageContent map[string]lessonStageContentStage,
+) {
+	stage.CoreIdea = lessonContent.Learn.CoreIdea
+	stage.MechanismSteps = slices.Clone(lessonContent.Learn.MechanismSteps)
+	stage.WorkedExample = lessonContent.Learn.WorkedExample
+	stage.CommonMistakes = slices.Clone(lessonContent.Learn.CommonMistakes)
+	stage.PreChallengeChecklist = slices.Clone(lessonContent.Learn.PreChallengeChecklist)
+
+	override, ok := stageContent[stage.ID]
+	if !ok {
+		panic("missing stage override for " + stage.ID)
+	}
+	if override.Objective == "" {
+		panic("missing stage objective for " + stage.ID)
+	}
+	if override.Goal == "" {
+		panic("missing stage goal for " + stage.ID)
+	}
+	if override.Hints.Nudge == "" || override.Hints.Concept == "" || override.Hints.Explicit == "" {
+		panic("missing complete stage hints for " + stage.ID)
+	}
+
+	stage.Objective = override.Objective
+	stage.Goal = override.Goal
+	if override.TheoryDetail != "" {
+		stage.TheoryDetail = override.TheoryDetail
+	}
+	stage.Hints = override.Hints
+	if hints := toValidatorHints(override.ValidatorHints); len(hints) > 0 {
+		stage.ValidatorHints = hints
+	}
+}
+
+func applyLessonMetadata(lesson *Lesson, record lessonContentRecord) {
 	if lesson.SectionID == "" {
 		lesson.SectionID = defaultSectionID(lesson.Module)
 	}
 	if lesson.SectionTitle == "" {
 		lesson.SectionTitle = defaultSectionTitle(lesson.SectionID)
 	}
-	if lesson.Difficulty == "" {
-		lesson.Difficulty = defaultDifficulty(lesson.ID)
-	}
-	if lesson.EstimatedMinutes <= 0 {
-		lesson.EstimatedMinutes = 20
-	}
-	if len(lesson.ChapterRefs) == 0 {
-		lesson.ChapterRefs = defaultChapterRefs(lesson.Module)
-	}
+	lesson.Difficulty = record.Difficulty
+	lesson.EstimatedMinutes = record.EstimatedMinutes
+	lesson.ChapterRefs = slices.Clone(record.ChapterRefs)
 }
 
 func defaultSectionID(module string) string {
@@ -455,32 +456,6 @@ func defaultSectionTitle(sectionID string) string {
 		return "Persistence"
 	default:
 		return "OSTEP Core"
-	}
-}
-
-func defaultDifficulty(lessonID string) string {
-	switch lessonID {
-	case "l01-sched-rr-basics", "l02-sched-fifo-baseline", "l07-vm-fault-sequence", "l12-irq-wakeup-read", "l16-fs-open-traversal":
-		return "foundation"
-	case "l03-sched-mlfq-balance", "l10-vm-replacement-fifo", "l15-mixed-blocking", "l20-fs-invariants":
-		return "advanced"
-	default:
-		return "intermediate"
-	}
-}
-
-func defaultChapterRefs(module string) []string {
-	switch module {
-	case "cpu-virtualization":
-		return []string{"cpu-intro", "cpu-mechanisms", "cpu-sched", "cpu-sched-mlfq"}
-	case "memory":
-		return []string{"vm-intro", "vm-mechanism", "vm-paging", "vm-tlbs"}
-	case "concurrency":
-		return []string{"threads-intro", "threads-locks", "threads-cv", "threads-sema"}
-	case "persistence":
-		return []string{"file-devices", "file-intro", "file-implementation", "file-journaling"}
-	default:
-		return nil
 	}
 }
 
@@ -527,7 +502,9 @@ func defaultExpectedVisualCues(validators []ValidatorSpec) []string {
 		switch validator.Type {
 		case "trace_contains_all":
 			cue = "Trace timeline shows the required event sequence."
-		case "metric_eq", "metric_lte":
+		case "trace_order", "trace_count_eq", "trace_count_lte", "no_event":
+			cue = "Trace ordering and event frequency match challenge constraints."
+		case "metric_eq", "metric_lte", "metric_gte":
 			cue = "Metrics panel satisfies required numeric thresholds."
 		case "fault_eq", "fault_lte":
 			cue = "Memory panel fault counters match the expected condition."
@@ -542,6 +519,64 @@ func defaultExpectedVisualCues(validators []ValidatorSpec) []string {
 		}
 		seen[cue] = struct{}{}
 		out = append(out, cue)
+	}
+	return out
+}
+
+func defaultValidatorHints(module string, validators []ValidatorSpec, fallback HintSet) []ValidatorHint {
+	out := make([]ValidatorHint, 0, len(validators))
+	for _, validator := range validators {
+		hints := fallback
+		switch validator.Type {
+		case "trace_contains_all":
+			hints = HintSet{
+				Nudge:    "Compare your trace timeline against the required events first.",
+				Concept:  "Trace validators check mechanism evidence, not just final outcomes.",
+				Explicit: "Run enough steps, then verify each required event appears before submitting.",
+			}
+		case "trace_order":
+			hints = HintSet{
+				Nudge:    "Check whether required events appear in the expected order.",
+				Concept:  "Order failures usually indicate misunderstanding of control transfer flow.",
+				Explicit: "Inspect event sequence and re-run until ordering matches the expected chain.",
+			}
+		case "trace_count_eq", "trace_count_lte":
+			hints = HintSet{
+				Nudge:    "Count relevant trace events before you submit.",
+				Concept:  "Event frequency reflects policy and workload interaction.",
+				Explicit: "Adjust steps or tuning actions, then re-check the exact event count target.",
+			}
+		case "no_event":
+			hints = HintSet{
+				Nudge:    "Look for forbidden events in the trace.",
+				Concept:  "Some events signal invalid behavior for this lesson goal.",
+				Explicit: "Reset and avoid the action path that triggers forbidden events.",
+			}
+		case "metric_eq", "metric_lte", "metric_gte":
+			hints = HintSet{
+				Nudge:    "Focus on the target metric value in the metrics panel.",
+				Concept:  "Metrics capture performance tradeoffs; one change can improve one metric and hurt another.",
+				Explicit: "Tune policy/config and run again until the metric threshold is satisfied.",
+			}
+		case "fault_eq", "fault_lte":
+			hints = HintSet{
+				Nudge:    "Track memory access order and fault counters together.",
+				Concept:  "Fault outcomes are determined by access pattern, frame pressure, and translation reuse.",
+				Explicit: "Enumerate accesses and compare expected vs observed not-present faults.",
+			}
+		case "fs_ok":
+			hints = HintSet{
+				Nudge:    "Check filesystem validity after each run.",
+				Concept:  "Correct persistence behavior preserves invariants regardless of latency changes.",
+				Explicit: "Reset, rerun carefully, and verify path/blockmap flow before final invariants check.",
+			}
+		}
+
+		if module == "concurrency" && (validator.Type == "trace_order" || validator.Type == "trace_contains_all") {
+			hints.Concept = "In concurrency lessons, trace ordering explains block, wakeup, and resume behavior."
+		}
+
+		out = append(out, ValidatorHint{Validator: validator.Name, Hints: hints})
 	}
 	return out
 }
@@ -602,31 +637,6 @@ func defaultBootstrapCommands(commands []sim.Command) []sim.Command {
 		return nil
 	}
 	return out
-}
-
-func defaultObjectiveForStage(module, stageID string) string {
-	prefix := "Run the challenge"
-	switch module {
-	case "cpu-virtualization":
-		prefix = "Run the scheduler workload"
-	case "memory":
-		prefix = "Run the memory workload"
-	case "concurrency":
-		prefix = "Run the blocking/IRQ workload"
-	case "persistence":
-		prefix = "Run the filesystem workload"
-	}
-
-	suffix := "and satisfy all stage checks."
-	switch stageID {
-	case "s1":
-		suffix = "until the expected trace events appear."
-	case "s2":
-		suffix = "and verify the required outcome metrics."
-	case "s3":
-		suffix = "and apply tuning within limits before checking."
-	}
-	return prefix + " " + suffix
 }
 
 func allowsPolicy(allowed []string) bool {

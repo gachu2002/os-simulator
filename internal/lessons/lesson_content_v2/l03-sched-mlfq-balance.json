@@ -1,0 +1,28 @@
+{
+  "id": "l03-sched-mlfq-balance",
+  "difficulty": "intermediate",
+  "estimated_minutes": 24,
+  "chapter_refs": [
+    "cpu-sched-mlfq"
+  ],
+  "learn": {
+    "core_idea": "MLFQ approximates shortest-job preference by adapting priority based on observed CPU behavior.",
+    "mechanism_steps": [
+      "New work starts at high priority.",
+      "CPU-heavy behavior triggers demotion.",
+      "Interactive-like behavior tends to keep priority.",
+      "Scheduler chooses highest non-empty queue first."
+    ],
+    "worked_example": "Short bursts get early service while long bursts still progress through lower queues.",
+    "common_mistakes": [
+      "Treating MLFQ as fixed-priority static scheduling.",
+      "Ignoring that policy reacts to runtime behavior.",
+      "Assuming high-priority jobs always complete first."
+    ],
+    "pre_challenge_checklist": [
+      "I can explain demotion logic.",
+      "I can identify queue-biased dispatch patterns.",
+      "I can verify completion does not regress."
+    ]
+  }
+}

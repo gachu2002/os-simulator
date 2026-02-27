@@ -1,0 +1,28 @@
+{
+  "id": "l06b-lottery-tradeoffs",
+  "difficulty": "advanced",
+  "estimated_minutes": 22,
+  "chapter_refs": [
+    "cpu-sched-lottery"
+  ],
+  "learn": {
+    "core_idea": "Lottery scheduling offers probabilistic proportional-share fairness, evaluated over repeated outcomes.",
+    "mechanism_steps": [
+      "Assign tickets per process.",
+      "Draw winning ticket each quantum.",
+      "Observe long-run share proportionality.",
+      "Compare with deterministic fairness metrics."
+    ],
+    "worked_example": "Higher-ticket process wins more slices over many draws but not every draw.",
+    "common_mistakes": [
+      "Expecting strict deterministic alternation.",
+      "Judging fairness from one short run.",
+      "Ignoring variance in probabilistic schedules."
+    ],
+    "pre_challenge_checklist": [
+      "I understand expected share vs exact sequence.",
+      "I can read fairness_jain_index.",
+      "I can explain why this lesson is theory-heavy today."
+    ]
+  }
+}
