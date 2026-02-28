@@ -2,7 +2,7 @@ interface APIErrorEnvelope {
   message?: string;
 }
 
-export function buildURL(baseURL: string, path: string): string {
+function buildURL(baseURL: string, path: string): string {
   const trimmedBase = baseURL.trim().replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${trimmedBase}${normalizedPath}`;

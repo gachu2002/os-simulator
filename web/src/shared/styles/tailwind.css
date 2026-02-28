@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "../../styles.css";
+
+@layer base {
+  body {
+    @apply min-h-screen bg-slate-100 text-slate-900;
+  }
+}

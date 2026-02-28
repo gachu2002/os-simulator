@@ -1,6 +1,6 @@
 import type { SnapshotDTO } from "../lib/types";
 
-export interface TimelineCell {
+interface TimelineCell {
   tick: number;
   pid: number;
   label: string;
@@ -22,7 +22,7 @@ export function selectTimelineWindow(
   }));
 }
 
-export interface MemoryRow {
+interface MemoryRow {
   frame: number;
   owner: string;
   vpn: string;
@@ -42,7 +42,7 @@ export function selectFrameRows(snapshot: SnapshotDTO | null): MemoryRow[] {
     }));
 }
 
-export interface ProcessQueues {
+interface ProcessQueues {
   running: string[];
   ready: string[];
   blocked: string[];
@@ -89,7 +89,7 @@ export function selectProcessQueues(
   return queues;
 }
 
-export interface ProcessMetricRow {
+interface ProcessMetricRow {
   pid: number;
   name: string;
   state: string;
