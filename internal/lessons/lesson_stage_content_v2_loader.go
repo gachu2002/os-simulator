@@ -78,7 +78,7 @@ func toValidatorHints(raw []validatorHintRaw) []ValidatorHint {
 		if item.Validator == "" {
 			continue
 		}
-		out = append(out, ValidatorHint{Validator: item.Validator, Hints: item.Hints})
+		out = append(out, ValidatorHint(item))
 	}
 	return out
 }

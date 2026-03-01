@@ -34,3 +34,23 @@ func TestCatalogAppliesStageAuthoringOverrides(t *testing.T) {
 		t.Fatalf("expected stage hints from authored content")
 	}
 }
+
+func TestToValidatorHintsSkipsEntriesWithoutValidator(t *testing.T) {
+	out := toValidatorHints([]validatorHintRaw{
+		{Validator: "", Hints: HintSet{Nudge: "skip"}},
+		{Validator: "trace", Hints: HintSet{Nudge: "nudge", Concept: "concept", Explicit: "explicit"}},
+	})
+
+	if len(out) != 1 {
+		t.Fatalf("validator hints length=%d want=1", len(out))
+	}
+	if out[0].Validator != "trace" {
+		t.Fatalf("validator=%q want=%q", out[0].Validator, "trace")
+	}
+}
+
+func TestToValidatorHintsReturnsNilForEmptyInput(t *testing.T) {
+	if out := toValidatorHints(nil); out != nil {
+		t.Fatalf("expected nil output for nil input")
+	}
+}

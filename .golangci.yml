@@ -4,10 +4,14 @@ run:
 
 linters:
   enable:
+    - bodyclose
+    - errorlint
     - errcheck
     - govet
     - ineffassign
+    - misspell
     - staticcheck
+    - unconvert
     - unused
 
 issues:

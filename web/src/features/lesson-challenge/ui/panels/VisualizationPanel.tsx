@@ -1,14 +1,22 @@
 import type { SnapshotDTO } from "../../../../lib/types";
-import { VisualizationSuite } from "../visualization/VisualizationSuite";
+import { LessonSpecificVisualization } from "../visualization/LessonSpecificVisualization";
 
-export function VisualizationPanel({ snapshot }: { snapshot: SnapshotDTO | null }) {
+export function VisualizationPanel({
+  lessonID,
+  snapshot,
+  lastLessonAction,
+}: {
+  lessonID: string;
+  snapshot: SnapshotDTO | null;
+  lastLessonAction: string;
+}) {
   return (
-    <section className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <h3 className="text-sm font-semibold text-slate-900">2) Visualization</h3>
-      <VisualizationSuite
-        title="Live Challenge State"
-        subtitle="Run actions and inspect trace, memory, process queues, and metrics."
+    <section className="min-h-0 rounded-lg border border-slate-200 bg-white p-3">
+      <h3 className="text-sm font-semibold text-slate-900">Visualization</h3>
+      <LessonSpecificVisualization
+        lessonID={lessonID}
         snapshot={snapshot}
+        lastLessonAction={lastLessonAction}
       />
     </section>
   );

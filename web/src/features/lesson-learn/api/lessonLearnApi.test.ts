@@ -14,27 +14,28 @@ describe("fetchLessonLearn", () => {
 
   it("maps learn DTO fields to camelCase", async () => {
     vi.mocked(fetchJSON).mockResolvedValue({
+      version: "v3",
+      section_id: "virtualization-cpu",
       lesson: {
         id: "rr-basics",
         title: "Round Robin",
-        module: "scheduler",
-        section_id: "cpu",
-        section_title: "CPU",
-        estimated_minutes: 15,
-        chapter_refs: ["ch7"],
-        stages: [
-          {
-            index: 0,
-            id: "s0",
-            title: "Core",
-            core_idea: "time slicing",
-            mechanism_steps: ["enqueue", "rotate"],
-            worked_example: "P1 then P2",
-            common_mistakes: ["starvation assumptions"],
-            pre_challenge_checklist: ["watch queue"],
-            expected_visual_cues: ["gantt alternates"],
-          },
-        ],
+        objective: "Learn time slicing",
+        theory: {
+          concepts: ["time slicing", "quantum", "fairness"],
+        },
+        challenge: {
+          description: "Run processes with rr",
+          actions: ["execute_instruction", "set_quantum"],
+          visualizer: ["gantt", "queue"],
+          parts: [
+            {
+              id: "A",
+              title: "Part A",
+              objective: "observe alternation",
+              description: "Observe process alternation",
+            },
+          ],
+        },
       },
     });
 
@@ -42,13 +43,12 @@ describe("fetchLessonLearn", () => {
 
     expect(fetchJSON).toHaveBeenCalledWith(
       "http://localhost:8080",
-      "/lessons/rr-basics/learn?learner_id=learner-1",
+      "/lessons/rr-basics/learn/v3?learner_id=learner-1",
     );
-    expect(out.estimatedMinutes).toBe(15);
-    expect(out.chapterRefs).toEqual(["ch7"]);
+    expect(out.sectionId).toBe("virtualization-cpu");
     expect(out.stages[0].coreIdea).toBe("time slicing");
-    expect(out.stages[0].mechanismSteps).toEqual(["enqueue", "rotate"]);
-    expect(out.stages[0].preChallengeChecklist).toEqual(["watch queue"]);
-    expect(out.stages[0].expectedVisualCues).toEqual(["gantt alternates"]);
+    expect(out.stages[0].mechanismSteps).toEqual(["quantum", "fairness"]);
+    expect(out.stages[0].preChallengeChecklist).toEqual(["execute_instruction", "set_quantum"]);
+    expect(out.stages[0].expectedVisualCues).toEqual(["gantt", "queue"]);
   });
 });

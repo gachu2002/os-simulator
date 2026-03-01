@@ -1,12 +1,12 @@
 SHELL := /bin/bash
 
 DB_URL ?= postgres://postgres:postgres@localhost:5432/os_simulator?sslmode=disable
-MIGRATE := go run github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-SQLC := go run github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-AIR := go run github.com/air-verse/air@latest
-GOLANGCI_LINT := go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+MIGRATE := go run github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+SQLC := go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+AIR := go run github.com/air-verse/air@v1.64.5
+GOLANGCI_LINT := go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
-.PHONY: fmt fmt-check lint test test-race test-deterministic test-coverage lesson-pack web-format-check web-lint web-typecheck web-test web-build security ci-go ci-web ci-security ci release-check sqlc-generate sqlc-verify db-up db-down db-status db-create dev-server
+.PHONY: fmt fmt-check lint test test-race test-deterministic test-coverage lesson-pack web-format-check web-lint web-typecheck web-test web-build security audit-unused ci-go ci-web ci-security ci release-check sqlc-generate sqlc-verify db-up db-down db-status db-create dev-server
 
 fmt:
 	gofmt -w .
@@ -56,6 +56,10 @@ web-build:
 security:
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	pnpm --dir=web audit --prod --audit-level high
+
+audit-unused:
+	go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+	pnpm --dir=web exec tsc --noEmit --noUnusedLocals --noUnusedParameters
 
 ci-go: fmt-check lint sqlc-verify test test-deterministic test-race test-coverage lesson-pack
 

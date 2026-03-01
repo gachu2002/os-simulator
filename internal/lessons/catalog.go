@@ -77,7 +77,7 @@ func appendCPULessons(out *[]Lesson, specs []cpuLessonSpec) {
 	prereq := ""
 	for _, spec := range specs {
 		*out = append(*out, cpuLesson(spec, prereq))
-		prereq = spec.id + ":s3"
+		prereq = spec.id + ":s1"
 	}
 }
 

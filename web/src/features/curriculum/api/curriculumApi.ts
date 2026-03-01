@@ -1,113 +1,115 @@
 import type { CurriculumSection, LessonSummary, LessonStageSummary } from "../../../entities/lesson/model";
 import { fetchJSON } from "../../../lib/http";
 
-interface CurriculumResponseDTO {
-  sections: CurriculumSectionDTO[];
+interface CurriculumV3ResponseDTO {
+  version: string;
+  sections: CurriculumV3SectionDTO[];
 }
 
-interface CurriculumSectionDTO {
+interface CurriculumV3SectionDTO {
   id: string;
   title: string;
   subtitle?: string;
   order: number;
-  coming_soon: boolean;
-  lessons?: LessonSummaryDTO[];
-  completed_stages?: number;
-  total_stages?: number;
+  lessons: LessonV3DTO[];
 }
 
-interface LessonSummaryDTO {
+interface LessonV3DTO {
   id: string;
   title: string;
-  module: string;
-  section_id?: string;
-  section_title?: string;
-  difficulty?: string;
-  estimated_minutes?: number;
-  chapter_refs?: string[];
-  stages: LessonStageSummaryDTO[];
+  order: number;
+  objective: string;
+  challenge: LessonChallengeV3DTO;
 }
 
-interface LessonStageSummaryDTO {
-  index: number;
-  id: string;
-  title: string;
-  objective?: string;
-  goal?: string;
-  pass_conditions?: string[];
-  prerequisites?: string[];
-  allowed_commands?: string[];
-  action_descriptions?: Array<{ command: string; description: string }>;
-  expected_visual_cues?: string[];
-  limits?: {
-    max_steps?: number;
-    max_policy_changes?: number;
-    max_config_changes?: number;
-  };
-  attempts?: number;
-  completed?: boolean;
-  unlocked?: boolean;
+interface LessonChallengeV3DTO {
+  description: string;
+  actions: string[];
+  visualizer: string[];
+  parts?: Array<{
+    id: string;
+    title: string;
+    objective: string;
+    description: string;
+  }>;
 }
 
 export async function fetchCurriculumForLearner(
   baseURL: string,
   learnerID: string,
 ): Promise<CurriculumSection[]> {
-  const payload = await fetchJSON<CurriculumResponseDTO>(
+  const payload = await fetchJSON<CurriculumV3ResponseDTO>(
     baseURL,
-    `/curriculum?learner_id=${encodeURIComponent(learnerID)}`,
+    `/curriculum/v3?learner_id=${encodeURIComponent(learnerID)}`,
   );
   return payload.sections.map(mapSection);
 }
 
-function mapSection(dto: CurriculumSectionDTO): CurriculumSection {
+function mapSection(dto: CurriculumV3SectionDTO): CurriculumSection {
+  const lessons = dto.lessons
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((item) => mapLessonSummary(item, dto.id, dto.title));
+  const totalStages = lessons.reduce((sum, lesson) => sum + lesson.stages.length, 0);
+
   return {
     id: dto.id,
     title: dto.title,
     subtitle: dto.subtitle,
     order: dto.order,
-    comingSoon: dto.coming_soon,
-    lessons: dto.lessons?.map(mapLessonSummary),
-    completedStages: dto.completed_stages,
-    totalStages: dto.total_stages,
+    comingSoon: false,
+    lessons,
+    completedStages: 0,
+    totalStages,
   };
 }
 
-function mapLessonSummary(dto: LessonSummaryDTO): LessonSummary {
+function mapLessonSummary(dto: LessonV3DTO, sectionID: string, sectionTitle: string): LessonSummary {
+  const stages = mapStagesFromV3Lesson(dto);
   return {
     id: dto.id,
     title: dto.title,
-    module: dto.module,
-    sectionId: dto.section_id,
-    sectionTitle: dto.section_title,
-    difficulty: dto.difficulty,
-    estimatedMinutes: dto.estimated_minutes,
-    chapterRefs: dto.chapter_refs,
-    stages: dto.stages.map(mapLessonStageSummary),
+    module: sectionID,
+    sectionId: sectionID,
+    sectionTitle,
+    stages,
   };
 }
 
-function mapLessonStageSummary(dto: LessonStageSummaryDTO): LessonStageSummary {
-  return {
-    index: dto.index,
-    id: dto.id,
-    title: dto.title,
-    objective: dto.objective,
-    goal: dto.goal,
-    passConditions: dto.pass_conditions,
-    prerequisites: dto.prerequisites,
-    allowedCommands: dto.allowed_commands,
-    actionDescriptions: dto.action_descriptions,
-    expectedVisualCues: dto.expected_visual_cues,
-    limits: dto.limits
-      ? {
-          maxSteps: dto.limits.max_steps,
-          maxPolicyChanges: dto.limits.max_policy_changes,
-          maxConfigChanges: dto.limits.max_config_changes,
-        }
-      : undefined,
-    attempts: dto.attempts,
-    completed: dto.completed,
-    unlocked: dto.unlocked,
-  };
+function mapStagesFromV3Lesson(dto: LessonV3DTO): LessonStageSummary[] {
+  if ((dto.challenge.parts ?? []).length > 0) {
+    return (dto.challenge.parts ?? []).map((part, index) => ({
+      index,
+      id: part.id,
+      title: part.title,
+      objective: part.objective,
+      goal: part.description,
+      passConditions: [dto.objective],
+      unlocked: true,
+      completed: false,
+      actionDescriptions: dto.challenge.actions.map((action) => ({
+        command: action,
+        description: `Action: ${action}`,
+      })),
+      expectedVisualCues: dto.challenge.visualizer,
+    }));
+  }
+
+  return [
+    {
+      index: 0,
+      id: "core",
+      title: "Core Challenge",
+      objective: dto.objective,
+      goal: dto.challenge.description,
+      passConditions: [dto.objective],
+      unlocked: true,
+      completed: false,
+      actionDescriptions: dto.challenge.actions.map((action) => ({
+        command: action,
+        description: `Action: ${action}`,
+      })),
+      expectedVisualCues: dto.challenge.visualizer,
+    },
+  ];
 }

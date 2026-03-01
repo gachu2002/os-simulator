@@ -107,88 +107,128 @@ func (s *Session) applyLocked(cmd Command) error {
 	simCmd := sim.Command{Name: cmd.Name, Count: cmd.Count, Process: cmd.Process, Program: cmd.Program, Policy: cmd.Policy, Quantum: cmd.Quantum}
 	switch cmd.Name {
 	case "spawn":
-		if cmd.Program == "" {
-			return fmt.Errorf("spawn requires program")
-		}
-		if cmd.Process == "" {
-			simCmd.Process = ""
-		}
+		return s.applySpawn(cmd, simCmd)
+	case "block_process", "unblock_process", "kill_process":
+		return s.engine.Execute(simCmd)
+	case "preempt_current_job", "choose_next_process":
 		return s.engine.Execute(simCmd)
 	case "step":
-		if cmd.Count == 0 {
-			simCmd.Count = 1
-		}
-		if simCmd.Count < 0 {
-			return fmt.Errorf("step count must be non-negative")
-		}
-		return s.engine.Execute(simCmd)
+		return s.applyStep(simCmd)
 	case "run":
-		if cmd.Count <= 0 {
-			return fmt.Errorf("run requires positive count")
-		}
-		simCmd.Name = "step"
-		return s.engine.Execute(simCmd)
+		return s.applyRun(cmd, simCmd)
 	case "pause":
 		return nil
 	case "policy":
-		if cmd.Policy == "" {
-			return fmt.Errorf("policy requires policy name")
-		}
-		if cmd.Quantum == 0 && cmd.Policy == sim.PolicyRR {
-			simCmd.Quantum = 2
-		}
-		return s.engine.Execute(simCmd)
+		return s.applyPolicy(cmd, simCmd)
 	case "set_frames":
-		if cmd.Frames <= 0 {
-			return fmt.Errorf("set_frames requires positive frames")
-		}
-		tlb := s.runtime.TLBEntries
-		if tlb <= 0 {
-			tlb = cmd.Frames
-		}
-		s.engine.ConfigureMemory(cmd.Frames, tlb)
-		s.runtime.Frames = cmd.Frames
-		s.runtime.TLBEntries = tlb
-		return nil
+		return s.applySetFrames(cmd)
 	case "set_tlb_entries":
-		if cmd.TLBEntries <= 0 {
-			return fmt.Errorf("set_tlb_entries requires positive tlb_entries")
-		}
-		frames := s.runtime.Frames
-		if frames <= 0 {
-			frames = cmd.TLBEntries
-		}
-		s.engine.ConfigureMemory(frames, cmd.TLBEntries)
-		s.runtime.Frames = frames
-		s.runtime.TLBEntries = cmd.TLBEntries
-		return nil
+		return s.applySetTLBEntries(cmd)
 	case "set_disk_latency":
-		if cmd.DiskLatency <= 0 {
-			return fmt.Errorf("set_disk_latency requires positive disk_latency")
-		}
-		s.engine.ConfigureDevices(cmd.DiskLatency, s.runtime.TerminalLatency)
-		s.runtime.DiskLatency = cmd.DiskLatency
-		return nil
+		return s.applySetDiskLatency(cmd)
 	case "set_terminal_latency":
-		if cmd.TerminalLatency <= 0 {
-			return fmt.Errorf("set_terminal_latency requires positive terminal_latency")
-		}
-		s.engine.ConfigureDevices(s.runtime.DiskLatency, cmd.TerminalLatency)
-		s.runtime.TerminalLatency = cmd.TerminalLatency
-		return nil
+		return s.applySetTerminalLatency(cmd)
 	case "reset":
-		e := sim.NewEngine(s.cfg.Seed, s.cfg.CheckpointEvery)
-		e.ConfigureMemory(s.cfg.Frames, s.cfg.TLBEntries)
-		e.ConfigureDevices(s.cfg.DiskLatency, s.cfg.TerminalLatency)
-		if err := e.SetSchedulingPolicy(s.cfg.Policy, s.cfg.Quantum); err != nil {
-			return err
-		}
-		s.engine = e
-		s.runtime = s.cfg
-		return nil
+		return s.applyReset()
 	default:
 		return fmt.Errorf("unknown command %q", cmd.Name)
 	}
+}
+
+func (s *Session) applySpawn(cmd Command, simCmd sim.Command) error {
+	if cmd.Program == "" {
+		return fmt.Errorf("spawn requires program")
+	}
+	if cmd.Process == "" {
+		simCmd.Process = ""
+	}
+	return s.engine.Execute(simCmd)
+}
+
+func (s *Session) applyStep(simCmd sim.Command) error {
+	if simCmd.Count == 0 {
+		simCmd.Count = 1
+	}
+	if simCmd.Count < 0 {
+		return fmt.Errorf("step count must be non-negative")
+	}
+	return s.engine.Execute(simCmd)
+}
+
+func (s *Session) applyRun(cmd Command, simCmd sim.Command) error {
+	if cmd.Count <= 0 {
+		return fmt.Errorf("run requires positive count")
+	}
+	simCmd.Name = "step"
+	return s.engine.Execute(simCmd)
+}
+
+func (s *Session) applyPolicy(cmd Command, simCmd sim.Command) error {
+	if cmd.Policy == "" {
+		return fmt.Errorf("policy requires policy name")
+	}
+	if cmd.Quantum == 0 && cmd.Policy == sim.PolicyRR {
+		simCmd.Quantum = 2
+	}
+	return s.engine.Execute(simCmd)
+}
+
+func (s *Session) applySetFrames(cmd Command) error {
+	if cmd.Frames <= 0 {
+		return fmt.Errorf("set_frames requires positive frames")
+	}
+	tlb := s.runtime.TLBEntries
+	if tlb <= 0 {
+		tlb = cmd.Frames
+	}
+	s.engine.ConfigureMemory(cmd.Frames, tlb)
+	s.runtime.Frames = cmd.Frames
+	s.runtime.TLBEntries = tlb
+	return nil
+}
+
+func (s *Session) applySetTLBEntries(cmd Command) error {
+	if cmd.TLBEntries <= 0 {
+		return fmt.Errorf("set_tlb_entries requires positive tlb_entries")
+	}
+	frames := s.runtime.Frames
+	if frames <= 0 {
+		frames = cmd.TLBEntries
+	}
+	s.engine.ConfigureMemory(frames, cmd.TLBEntries)
+	s.runtime.Frames = frames
+	s.runtime.TLBEntries = cmd.TLBEntries
+	return nil
+}
+
+func (s *Session) applySetDiskLatency(cmd Command) error {
+	if cmd.DiskLatency <= 0 {
+		return fmt.Errorf("set_disk_latency requires positive disk_latency")
+	}
+	s.engine.ConfigureDevices(cmd.DiskLatency, s.runtime.TerminalLatency)
+	s.runtime.DiskLatency = cmd.DiskLatency
+	return nil
+}
+
+func (s *Session) applySetTerminalLatency(cmd Command) error {
+	if cmd.TerminalLatency <= 0 {
+		return fmt.Errorf("set_terminal_latency requires positive terminal_latency")
+	}
+	s.engine.ConfigureDevices(s.runtime.DiskLatency, cmd.TerminalLatency)
+	s.runtime.TerminalLatency = cmd.TerminalLatency
+	return nil
+}
+
+func (s *Session) applyReset() error {
+	e := sim.NewEngine(s.cfg.Seed, s.cfg.CheckpointEvery)
+	e.ConfigureMemory(s.cfg.Frames, s.cfg.TLBEntries)
+	e.ConfigureDevices(s.cfg.DiskLatency, s.cfg.TerminalLatency)
+	if err := e.SetSchedulingPolicy(s.cfg.Policy, s.cfg.Quantum); err != nil {
+		return err
+	}
+	s.engine = e
+	s.runtime = s.cfg
+	return nil
 }
 
 func (s *Session) errorEventLocked(err error) Event {

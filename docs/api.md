@@ -1,13 +1,17 @@
-# API Contract
+# API Contract (V3)
+
+This document describes the active V3 API used by the frontend.
 
 ## Base Endpoints
 
 - `GET /healthz`
-- `GET /curriculum`
-- `GET /lessons/{lessonID}/learn`
-- `POST /challenges/start`
-- `POST /challenges/submit`
-- `WS /ws/{sessionID}`
+- `GET /curriculum/v3`
+- `GET /lessons/{lessonID}/learn/v3`
+- `GET /lessons/{lessonID}/challenge/v3`
+- `POST /challenges/start/v3`
+- `POST /challenges/action/v3`
+- `POST /challenges/submit/v3`
+- `GET /challenges/{attemptID}/replay/v3`
 
 ## Request/Response Notes
 
@@ -31,37 +35,71 @@ All HTTP errors return:
 
 ## Curriculum
 
-### `GET /curriculum`
+### `GET /curriculum/v3`
 
-Returns section-first curriculum payload for home page rendering. Response includes ordered sections (`id`, `title`, `subtitle`, `order`, `coming_soon`) and embedded lesson summaries. For active sections, progress totals are included (`completed_stages`, `total_stages`). Supports optional `learner_id` query param.
+Returns Section 1 (`virtualization-cpu`) curriculum model with lesson theory concepts,
+challenge actions, visualizer specs, optional challenge parts (`A`/`B`), and
+cross-cutting feature flags.
 
 ## Lesson Learn
 
-### `GET /lessons/{lessonID}/learn`
+### `GET /lessons/{lessonID}/learn/v3`
 
-Returns theory-first lesson payload intended for Learn page rendering. Includes lesson metadata and per-stage learn blocks (`theory`, `theory_detail`, `objective`, `goal`, prerequisites, expected visual cues). This endpoint excludes challenge control metadata.
+Returns V3 lesson metadata for Section 1 (`version`, `section_id`, and lesson payload).
+
+### `GET /lessons/{lessonID}/challenge/v3`
+
+Returns V3 challenge manifest for a lesson, including:
+
+- `actions`
+- `action_capabilities.supported_now`
+- `action_capabilities.planned`
+- `action_capability_notes` (per-action status/reason/fallback guidance)
+- `part_required` and optional `parts`
+- `visualizer`
+- `cross_cutting_features`
 
 ## Challenge Start
 
-### `POST /challenges/start`
+### `POST /challenges/start/v3`
 
 Body:
 
 ```json
 {
-  "lesson_id": "l01-sched-rr-basics",
-  "stage_index": 0,
+  "lesson_id": "l01-process-basics",
+  "part_id": "A",
   "learner_id": "learner-123"
 }
 ```
 
-Returns lesson-stage attempt metadata (`attempt_id`, `session_id`, objective, allowed commands, and limits including optional `max_config_changes`).
+Starts a V3 challenge attempt and returns lesson metadata, optional part metadata,
+runtime limits, action/visualizer descriptors, `action_capabilities`, and
+`action_capability_notes`.
 
-Also includes `goal` and `pass_conditions` so the challenge page can render submit checklist before grading.
+`part_id` is required only for lessons that define challenge parts.
+
+## Challenge Action
+
+### `POST /challenges/action/v3`
+
+Applies one V3 action against an attempt and returns the mapped simulator event.
+
+```json
+{
+  "attempt_id": "a-000001",
+  "learner_id": "learner-123",
+  "action": "execute_instruction",
+  "count": 1
+}
+```
+
+Response includes `mapped_command` and `event` (`session.snapshot` or `session.error`).
+Unsupported actions return `400` with `code="invalid_action"`.
 
 ## Challenge Submit
 
-### `POST /challenges/submit`
+### `POST /challenges/submit/v3`
 
 Body:
 
@@ -72,26 +110,19 @@ Body:
 }
 ```
 
-Grades the current lesson-stage session state and returns pass/fail, hint progression fields, output snapshot fields, completion analytics, and per-validator check results in `validator_results`. `learner_id` must match the learner that started the attempt.
+Grades a V3 attempt and returns V3 lesson/part metadata, pass/fail + hint fields,
+output snapshot, analytics, validator results, and `action_capabilities`.
 
-Each validator result includes `expected` and `actual` fields for expected-vs-actual rendering.
+Top-level response contract fixtures used by tests:
 
-## WebSocket Stream
+- `contracts/challenge_start_v3_contract.json`
+- `contracts/challenge_submit_v3_contract.json`
 
-### `WS /ws/{sessionID}`
+## Challenge Replay
 
-Inbound envelope:
+### `GET /challenges/{attemptID}/replay/v3`
 
-```json
-{
-  "type": "command",
-  "command": { "name": "step", "count": 1 }
-}
-```
+Returns replay payload for a V3 attempt including full trace, trace hash/length,
+process/metrics/memory snapshots, filesystem status, and `action_capabilities`.
 
-Outbound event types:
-
-- `session.snapshot`
-- `session.error`
-
-For challenge sessions, `session.snapshot` may include `snapshot.challenge` budget fields (`max_steps`, `used_steps`, `remaining_steps`, plus policy and config-change counterparts) to drive live exercise limits in the UI.
+`learner_id` query parameter is required and must match the attempt owner.

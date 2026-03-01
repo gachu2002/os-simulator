@@ -7,13 +7,14 @@ export function LessonLearnRoutePage() {
   const navigate = useNavigate();
   const { lessonID = "" } = useParams<{ lessonID: string }>();
   const [searchParams] = useSearchParams();
-  const stage = Number(searchParams.get("stage") ?? 0);
+  const stageParam = searchParams.get("stage");
+  const stage = stageParam === null ? undefined : Number(stageParam);
 
   return (
     <LessonLearnPage
       baseURL={apiBaseURL()}
       lessonID={lessonID}
-      preferredStageIndex={Number.isFinite(stage) ? stage : 0}
+      preferredStageIndex={Number.isFinite(stage) ? stage : undefined}
       onNavigate={(to) => navigate(to)}
     />
   );

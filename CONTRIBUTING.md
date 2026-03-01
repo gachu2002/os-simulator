@@ -7,6 +7,8 @@
 3. Run local verification before opening PR.
 4. Open PR with summary, rationale, and validation evidence.
 
+See `docs/engineering-workflow.md` for repository operating model, review expectations, and cleanup policy.
+
 ## Local Verification
 
 ```bash
@@ -20,6 +22,18 @@ pre-commit install
 ```
 
 If only one stack is touched, run targeted checks first, then full relevant suite.
+
+### Backend pull requests
+
+Run this sequence for backend-only changes:
+
+1. Targeted tests for touched package(s).
+2. `make ci-go`
+3. If determinism-sensitive behavior changed, rerun `make test-deterministic` once more to confirm stable results.
+
+### Toolchain pinning
+
+Repository `make` targets pin CLI tool versions for reproducibility. When bumping a tool version, update it in `Makefile` and include the reason in the PR.
 
 ## Commit Style
 

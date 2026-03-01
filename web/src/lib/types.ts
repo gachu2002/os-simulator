@@ -99,11 +99,6 @@ export interface Command {
   terminal_latency?: number;
 }
 
-export interface CommandEnvelope {
-  type: "command";
-  command: Command;
-}
-
 export interface SessionEvent {
   type: "session.snapshot" | "session.error";
   sequence: number;

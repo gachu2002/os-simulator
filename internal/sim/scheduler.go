@@ -12,6 +12,7 @@ type Scheduler interface {
 	Policy() string
 	Quantum() int
 	OnReady(pid int, fromWake bool)
+	RemoveReady(pid int)
 	OnDispatch(pid int)
 	OnTick(pid int) bool
 	OnBlock(pid int)
@@ -86,6 +87,7 @@ func newFIFOScheduler() *fifoScheduler {
 func (s *fifoScheduler) Policy() string          { return PolicyFIFO }
 func (s *fifoScheduler) Quantum() int            { return 0 }
 func (s *fifoScheduler) OnReady(pid int, _ bool) { s.ready.Enqueue(pid) }
+func (s *fifoScheduler) RemoveReady(pid int)     { s.ready.Remove(pid) }
 func (s *fifoScheduler) OnDispatch(_ int)        {}
 func (s *fifoScheduler) OnTick(_ int) bool       { return false }
 func (s *fifoScheduler) OnBlock(pid int)         { s.ready.Remove(pid) }
@@ -107,7 +109,8 @@ func (s *rrScheduler) Quantum() int   { return s.quantum }
 func (s *rrScheduler) OnReady(pid int, _ bool) {
 	s.ready.Enqueue(pid)
 }
-func (s *rrScheduler) OnDispatch(pid int) { s.runTicks[pid] = 0 }
+func (s *rrScheduler) RemoveReady(pid int) { s.ready.Remove(pid) }
+func (s *rrScheduler) OnDispatch(pid int)  { s.runTicks[pid] = 0 }
 func (s *rrScheduler) OnTick(pid int) bool {
 	s.runTicks[pid]++
 	if s.runTicks[pid] >= s.quantum {
@@ -153,6 +156,12 @@ func (s *mlfqScheduler) OnReady(pid int, fromWake bool) {
 	}
 	lvl := s.levels[pid]
 	s.queues[lvl].Enqueue(pid)
+}
+
+func (s *mlfqScheduler) RemoveReady(pid int) {
+	for i := range s.queues {
+		s.queues[i].Remove(pid)
+	}
 }
 
 func (s *mlfqScheduler) OnDispatch(pid int) {

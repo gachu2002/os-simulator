@@ -8,6 +8,7 @@
 
 ## Validation
 
+- [ ] Targeted tests for touched package(s)
 - [ ] `go test ./...`
 - [ ] `pnpm --dir=web run test`
 - [ ] `pnpm --dir=web run build`

@@ -7,12 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 type challengeStartResponse struct {
@@ -34,18 +30,18 @@ func main() {
 	if err := getOK(client, *backend+"/healthz"); err != nil {
 		fatalf("healthz failed: %v", err)
 	}
-	if err := getOK(client, *backend+"/curriculum"); err != nil {
-		fatalf("curriculum failed: %v", err)
+	if err := getOK(client, *backend+"/curriculum/v3"); err != nil {
+		fatalf("curriculum/v3 failed: %v", err)
 	}
-	attemptID, sessionID, err := startChallenge(client, *backend)
+	attemptID, err := startChallengeV3(client, *backend)
 	if err != nil {
-		fatalf("challenge start failed: %v", err)
+		fatalf("challenge start v3 failed: %v", err)
 	}
-	if err := postOK(client, *backend+"/challenges/submit", map[string]any{"attempt_id": attemptID}); err != nil {
-		fatalf("challenge submit failed: %v", err)
+	if err := postOK(client, *backend+"/challenges/action/v3", map[string]any{"attempt_id": attemptID, "action": "execute_instruction", "count": 1}); err != nil {
+		fatalf("challenge action v3 failed: %v", err)
 	}
-	if err := wsSmoke(*backend, sessionID); err != nil {
-		fatalf("websocket smoke failed: %v", err)
+	if err := postOK(client, *backend+"/challenges/submit/v3", map[string]any{"attempt_id": attemptID}); err != nil {
+		fatalf("challenge submit v3 failed: %v", err)
 	}
 
 	if err := getOK(client, *frontend); err != nil {
@@ -53,28 +49,28 @@ func main() {
 	}
 }
 
-func startChallenge(client *http.Client, backend string) (string, string, error) {
-	b, err := json.Marshal(map[string]any{"lesson_id": "l01-sched-rr-basics", "stage_index": 0})
+func startChallengeV3(client *http.Client, backend string) (string, error) {
+	b, err := json.Marshal(map[string]any{"lesson_id": "l01-process-basics"})
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	resp, err := client.Post(backend+"/challenges/start", "application/json", bytes.NewReader(b))
+	resp, err := client.Post(backend+"/challenges/start/v3", "application/json", bytes.NewReader(b))
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", "", fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
 	}
 	var out challengeStartResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", "", err
+		return "", err
 	}
-	if out.AttemptID == "" || out.SessionID == "" {
-		return "", "", fmt.Errorf("empty challenge identifiers")
+	if out.AttemptID == "" {
+		return "", fmt.Errorf("empty challenge identifiers")
 	}
-	return out.AttemptID, out.SessionID, nil
+	return out.AttemptID, nil
 }
 
 func getOK(client *http.Client, endpoint string) error {
@@ -105,56 +101,6 @@ func postOK(client *http.Client, endpoint string, payload any) error {
 		return fmt.Errorf("status=%d body=%s", resp.StatusCode, string(body))
 	}
 	return nil
-}
-
-func wsSmoke(backend, sessionID string) error {
-	wsURL, err := toWSURL(backend, sessionID)
-	if err != nil {
-		return err
-	}
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = conn.Close() }()
-
-	var connected map[string]any
-	if err := conn.ReadJSON(&connected); err != nil {
-		return err
-	}
-	if connected["type"] != "session.snapshot" {
-		return fmt.Errorf("unexpected first event type=%v", connected["type"])
-	}
-
-	cmd := map[string]any{"type": "command", "command": map[string]any{"name": "step", "count": 1}}
-	if err := conn.WriteJSON(cmd); err != nil {
-		return err
-	}
-	var event map[string]any
-	if err := conn.ReadJSON(&event); err != nil {
-		return err
-	}
-	if event["type"] != "session.snapshot" {
-		return fmt.Errorf("unexpected command event type=%v", event["type"])
-	}
-	return nil
-}
-
-func toWSURL(base, sessionID string) (string, error) {
-	u, err := url.Parse(base)
-	if err != nil {
-		return "", err
-	}
-	switch u.Scheme {
-	case "http":
-		u.Scheme = "ws"
-	case "https":
-		u.Scheme = "wss"
-	default:
-		return "", fmt.Errorf("unsupported scheme %q", u.Scheme)
-	}
-	u.Path = strings.TrimRight(u.Path, "/") + "/ws/" + sessionID
-	return u.String(), nil
 }
 
 func fatalf(format string, args ...any) {

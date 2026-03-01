@@ -5,19 +5,22 @@ import (
 	"os"
 	"sync"
 
+	appchallenges "os-simulator-plan/internal/app/challenges"
+	contentv3 "os-simulator-plan/internal/content/v3"
 	"os-simulator-plan/internal/lessons"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/websocket"
 )
 
 type Server struct {
 	manager           *SessionManager
 	challengeAttempts *ChallengeAttemptStore
+	challengeService  *appchallenges.Service
 	lessonMu          sync.Mutex
 	lessonCatalog     map[string]lessons.Lesson
 	lessonEngines     map[string]*lessons.Engine
-	upgrader          websocket.Upgrader
+	cpuCurriculumV3   contentv3.Curriculum
+	cpuCurriculumErr  error
 	origins           map[string]struct{}
 }
 
@@ -31,20 +34,22 @@ func NewServerWithLessons(manager *SessionManager, lessonEngine *lessons.Engine)
 	for _, lesson := range lessonEngine.Lessons() {
 		catalog[lesson.ID] = lesson
 	}
-	return &Server{
+	cpuCurriculumV3, cpuCurriculumErr := contentv3.LoadCPUCurriculum()
+	server := &Server{
 		manager:           manager,
 		challengeAttempts: NewChallengeAttemptStore(),
 		lessonCatalog:     catalog,
 		lessonEngines:     map[string]*lessons.Engine{},
+		cpuCurriculumV3:   cpuCurriculumV3,
+		cpuCurriculumErr:  cpuCurriculumErr,
 		origins:           origins,
-		upgrader: websocket.Upgrader{
-			ReadBufferSize:  4096,
-			WriteBufferSize: 4096,
-			CheckOrigin: func(r *http.Request) bool {
-				return isOriginAllowed(origins, r.Header.Get("Origin"))
-			},
-		},
 	}
+	server.challengeService = appchallenges.NewService(
+		lessonEngineProviderAdapter{server: server},
+		sessionStoreAdapter{manager: server.manager},
+		challengeAttemptStoreAdapter{store: server.challengeAttempts},
+	)
+	return server
 }
 
 func (s *Server) lessonEngineForLearner(learnerID string) *lessons.Engine {
@@ -65,10 +70,12 @@ func (s *Server) lessonEngineForLearner(learnerID string) *lessons.Engine {
 func (s *Server) Handler() http.Handler {
 	router := chi.NewRouter()
 	router.HandleFunc("/healthz", s.handleHealth)
-	router.HandleFunc("/curriculum", s.handleCurriculum)
-	router.HandleFunc("/lessons/{lessonID}/learn", s.handleLessonLearn)
-	router.HandleFunc("/challenges/start", s.handleChallengeStart)
-	router.HandleFunc("/challenges/submit", s.handleChallengeSubmit)
-	router.HandleFunc("/ws/{id}", s.handleWS)
+	router.HandleFunc("/curriculum/v3", s.handleCurriculumV3)
+	router.HandleFunc("/lessons/{lessonID}/learn/v3", s.handleLessonLearnV3)
+	router.HandleFunc("/lessons/{lessonID}/challenge/v3", s.handleChallengeManifestV3)
+	router.HandleFunc("/challenges/start/v3", s.handleChallengeStartV3)
+	router.HandleFunc("/challenges/action/v3", s.handleChallengeActionV3)
+	router.HandleFunc("/challenges/submit/v3", s.handleChallengeSubmitV3)
+	router.HandleFunc("/challenges/{attemptID}/replay/v3", s.handleChallengeReplayV3)
 	return withRequestID(withCORS(s.origins, router))
 }

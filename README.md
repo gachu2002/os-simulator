@@ -27,6 +27,11 @@ pnpm --dir=web install
 pnpm --dir=web run dev
 ```
 
+Optional infrastructure bootstrap:
+
+- set `DATABASE_URL` to enable Postgres pool bootstrap on server startup
+- leave `DATABASE_URL` unset to run in simulator-only mode
+
 Web routes:
 
 - `/`: OSTEP section overview with lesson titles (Introduction/Security shown as coming soon)
@@ -55,6 +60,7 @@ Use `make` targets:
 - `make ci-go` - Go CI-equivalent local run
 - `make ci-web` - web CI-equivalent local run
 - `make ci-security` - security CI-equivalent local run
+- `make audit-unused` - detect unused/dead code signals (Go + TypeScript)
 - `make db-up` / `make db-down` / `make db-status` - run local DB migrations
 - `make db-create name=add_feature` - create migration pair
 - `make dev-server` - run backend with live reload via air
@@ -85,7 +91,7 @@ See `docs/release-checklist.md`.
 
 - API reference: `docs/api.md`
 - Architecture: `docs/architecture.md`
-- Learning architecture: `docs/learning-architecture.md`
+- Engineering workflow: `docs/engineering-workflow.md`
 - ADR index: `docs/adr/README.md`
 - Contribution guide: `CONTRIBUTING.md`
 - Security policy: `SECURITY.md`

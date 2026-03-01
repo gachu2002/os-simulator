@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	platformdb "os-simulator-plan/internal/platform/db"
 	"os-simulator-plan/internal/transport/realtime"
 
 	"go.uber.org/zap"
@@ -25,6 +26,17 @@ func main() {
 	}
 	defer func() {
 		_ = logger.Sync()
+	}()
+
+	dbPool, err := platformdb.NewPoolFromEnv(context.Background(), logger)
+	if err != nil {
+		logger.Error("database bootstrap failed", zap.Error(err))
+		os.Exit(1)
+	}
+	defer func() {
+		if dbPool != nil {
+			dbPool.Close()
+		}
 	}()
 
 	manager := realtime.NewSessionManager()

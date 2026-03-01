@@ -6,7 +6,7 @@ This guide uses:
 - Frontend (`web`): Cloudflare Pages free tier
 - CI/CD: GitHub Actions (`ci` + deploy smoke workflow)
 
-## 1) Backend on Render (Go + WebSocket)
+## 1) Backend on Render (Go)
 
 1. Create a new **Web Service** in Render from this GitHub repo.
 2. Configure:
@@ -21,7 +21,6 @@ This guide uses:
 Notes:
 
 - Free Render services can sleep when idle (cold starts).
-- WebSocket is supported by Render for this use case.
 
 ## 2) Frontend on Cloudflare Pages
 
@@ -58,9 +57,8 @@ Workflow file: `.github/workflows/deploy-smoke.yml`
 It verifies (via `cmd/smokecheck`):
 
 - backend health endpoint: `GET /healthz`
-- backend curriculum list: `GET /curriculum`
-- backend challenge start/submit: `POST /challenges/start` and `POST /challenges/submit`
-- backend realtime command path: WebSocket connect + `step` command
+- backend curriculum list: `GET /curriculum/v3`
+- backend challenge loop: `POST /challenges/start/v3` -> `POST /challenges/action/v3` -> `POST /challenges/submit/v3`
 - frontend availability: `GET /`
 
 Run it manually with **Actions -> deploy-smoke -> Run workflow**, or let it run on pushes to `main`.

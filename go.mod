@@ -4,7 +4,6 @@ go 1.24.0
 
 require (
 	github.com/go-chi/chi/v5 v5.2.5
-	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.8.0
 	go.uber.org/zap v1.27.1
 )

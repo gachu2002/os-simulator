@@ -56,11 +56,6 @@ type Command struct {
 	TerminalLatency sim.Tick `json:"terminal_latency,omitempty"`
 }
 
-type CommandEnvelope struct {
-	Type    string  `json:"type"`
-	Command Command `json:"command"`
-}
-
 type SnapshotDTO struct {
 	ProtocolVersion string                `json:"protocol_version"`
 	SessionID       string                `json:"session_id"`

@@ -10,6 +10,7 @@ export function AppRouter() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<CurriculumPage />} />
+        <Route path="lesson/:lessonID" element={<LessonChallengeRoutePage />} />
         <Route path="lesson/:lessonID/learn" element={<LessonLearnRoutePage />} />
         <Route path="lesson/:lessonID/challenge" element={<LessonChallengeRoutePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

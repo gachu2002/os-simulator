@@ -1,4 +1,8 @@
 import type { MemorySnapshot, ProcessSnapshot, SchedulingMetrics } from "../../lib/types";
+import type {
+  ActionCapabilities,
+  ActionCapabilityNotes,
+} from "./actionCapabilities";
 
 export interface CompletionAnalytics {
   totalStages: number;
@@ -35,6 +39,8 @@ export interface ChallengeStart {
   passConditions?: string[];
   allowedCommands: string[];
   limits: ChallengeLimits;
+  actionCapabilities?: ActionCapabilities;
+  actionCapabilityNotes?: ActionCapabilityNotes;
 }
 
 export interface ValidatorResult {

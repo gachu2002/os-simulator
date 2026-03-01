@@ -14,42 +14,43 @@ describe("fetchCurriculumForLearner", () => {
 
   it("maps curriculum DTO to domain model", async () => {
     vi.mocked(fetchJSON).mockResolvedValue({
+      version: "v3",
       sections: [
         {
-          id: "cpu",
+          id: "virtualization-cpu",
           title: "CPU Virtualization",
           subtitle: "Scheduling",
           order: 1,
-          coming_soon: false,
-          completed_stages: 2,
-          total_stages: 3,
           lessons: [
             {
               id: "rr-basics",
+              order: 1,
               title: "Round Robin",
-              module: "scheduler",
-              section_id: "cpu",
-              section_title: "CPU Virtualization",
-              estimated_minutes: 20,
-              chapter_refs: ["ch7"],
-              stages: [
-                {
-                  index: 0,
-                  id: "s0",
-                  title: "Intro",
-                  pass_conditions: ["throughput >= 1"],
-                  allowed_commands: ["step"],
-                  action_descriptions: [{ command: "step", description: "advance" }],
-                  expected_visual_cues: ["ready queue drains"],
-                  limits: {
-                    max_steps: 20,
-                    max_policy_changes: 1,
-                    max_config_changes: 2,
+              objective: "learn rr",
+              challenge: {
+                description: "run rr",
+                actions: ["execute_instruction", "set_quantum"],
+                visualizer: ["gantt-chart"],
+                parts: [
+                  {
+                    id: "A",
+                    title: "Part A",
+                    objective: "phase a",
+                    description: "part a desc",
                   },
-                  completed: true,
-                  unlocked: true,
-                },
-              ],
+                ],
+              },
+            },
+            {
+              id: "mlfq",
+              order: 2,
+              title: "MLFQ",
+              objective: "learn mlfq",
+              challenge: {
+                description: "run mlfq",
+                actions: ["step"],
+                visualizer: ["queue"],
+              },
             },
           ],
         },
@@ -60,12 +61,12 @@ describe("fetchCurriculumForLearner", () => {
 
     expect(fetchJSON).toHaveBeenCalledWith(
       "http://localhost:8080",
-      "/curriculum?learner_id=learner-1",
+      "/curriculum/v3?learner_id=learner-1",
     );
     expect(out[0].comingSoon).toBe(false);
-    expect(out[0].completedStages).toBe(2);
-    expect(out[0].lessons?.[0].estimatedMinutes).toBe(20);
-    expect(out[0].lessons?.[0].stages[0].passConditions).toEqual(["throughput >= 1"]);
-    expect(out[0].lessons?.[0].stages[0].limits?.maxPolicyChanges).toBe(1);
+    expect(out[0].completedStages).toBe(0);
+    expect(out[0].lessons?.[0].sectionId).toBe("virtualization-cpu");
+    expect(out[0].lessons?.[0].stages[0].id).toBe("A");
+    expect(out[0].lessons?.[1].stages[0].id).toBe("core");
   });
 });

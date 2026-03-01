@@ -4,8 +4,9 @@
 
 - `internal/sim`: deterministic simulator core, schedulers, VM, syscall path, devices/IRQs, filesystem, replay
 - `internal/lessons`: lesson catalog, prerequisites, deterministic validators, hint progression, and progress/analytics
-- `internal/transport/realtime`: HTTP + WebSocket transport for curriculum/learn data and challenge attempt lifecycle (`/curriculum`, `/lessons/{lessonID}/learn`, `/challenges/start`, `/challenges/submit`)
-- `internal/platform/db`: Postgres pool bootstrap (`pgxpool`) retained for infrastructure scaffolding
+- `internal/app/challenges`: challenge application service orchestrating lesson prep/grade with session and attempt stores
+- `internal/transport/realtime`: HTTP transport for V3 curriculum and challenge lifecycle (`/curriculum/v3`, `/lessons/{lessonID}/learn/v3`, `/lessons/{lessonID}/challenge/v3`, `/challenges/start|action|submit/v3`, `/challenges/{attemptID}/replay/v3`)
+- `internal/platform/db`: isolated infrastructure bootstrap (`pgxpool`), optional at runtime through `DATABASE_URL`; no domain package depends on it
 - `internal/db/sqlc`: generated typed query layer from `sqlc` config and SQL files
 - `cmd/simcli`: headless runner for simulation, replay, lesson execution, and analytics
 - `cmd/server`: realtime transport server entrypoint for browser sessions
@@ -29,13 +30,15 @@
 ## Boundary Contract
 
 - `internal/sim` and `internal/lessons` are domain core; they do not depend on transport or UI.
-- `internal/transport/realtime` adapts domain state to HTTP/WS contracts.
+- `internal/app/challenges` orchestrates challenge use cases and depends on domain contracts, not HTTP details.
+- `internal/transport/realtime` adapts domain state to HTTP contracts.
 - `web` consumes immutable DTO snapshots and never mutates simulator internals.
+- `internal/platform/*` is infrastructure-only; it is wired from `cmd/*` entrypoints and must not be imported by domain packages.
 
 ## Transport Safety Baseline
 
 - request body limits and unknown-field rejection on write endpoints
-- CORS/WS origin controls through allowlist configuration
+- CORS origin controls through allowlist configuration
 - request correlation with `X-Request-ID`
 
 ## Observability Baseline

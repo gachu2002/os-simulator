@@ -19,11 +19,17 @@ func TestCanTransitionMatrix(t *testing.T) {
 		t.Fatalf("blocked -> ready should be legal")
 	}
 
-	if CanTransition(ProcStateReady, ProcStateBlocked) {
-		t.Fatalf("ready -> blocked should be illegal")
+	if !CanTransition(ProcStateReady, ProcStateBlocked) {
+		t.Fatalf("ready -> blocked should be legal")
+	}
+	if !CanTransition(ProcStateReady, ProcStateTerminated) {
+		t.Fatalf("ready -> terminated should be legal")
 	}
 	if CanTransition(ProcStateBlocked, ProcStateRunning) {
 		t.Fatalf("blocked -> running should be illegal")
+	}
+	if !CanTransition(ProcStateBlocked, ProcStateTerminated) {
+		t.Fatalf("blocked -> terminated should be legal")
 	}
 }
 

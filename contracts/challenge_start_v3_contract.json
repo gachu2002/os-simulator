@@ -1,0 +1,20 @@
+{
+  "required_fields": [
+    "version",
+    "section_id",
+    "lesson_id",
+    "lesson_title",
+    "lesson_objective",
+    "attempt_id",
+    "session_id",
+    "allowed_commands",
+    "limits",
+    "action_capabilities",
+    "action_capability_notes"
+  ],
+  "forbidden_fields": [
+    "stage_index",
+    "objective",
+    "goal"
+  ]
+}

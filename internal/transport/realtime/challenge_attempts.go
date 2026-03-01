@@ -8,14 +8,6 @@ import (
 	"os-simulator-plan/internal/lessons"
 )
 
-var defaultChallengeAllowedCommands = []string{"step", "run", "pause", "policy", "reset"}
-
-const (
-	defaultChallengeMaxSteps         = 40
-	defaultChallengeMaxPolicyChanges = 3
-	defaultChallengeMaxConfigChanges = 2
-)
-
 type ChallengeAttempt struct {
 	AttemptID string
 	SessionID string

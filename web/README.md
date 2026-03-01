@@ -9,7 +9,7 @@ pnpm --dir=web install
 pnpm --dir=web run dev
 ```
 
-By default in dev, the app uses same-origin API calls and Vite proxies `/curriculum`, `/lessons/{lessonID}/learn`, `/challenges`, and `/ws` to `http://127.0.0.1:8080`.
+By default in dev, the app uses same-origin API calls and Vite proxies `/healthz`, `/curriculum`, `/lessons`, and `/challenges` to `http://127.0.0.1:8080`.
 
 ## UI Modes
 

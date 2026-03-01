@@ -20,11 +20,11 @@ func CanTransition(from, to ProcState) bool {
 	case ProcStateNew:
 		return to == ProcStateReady
 	case ProcStateReady:
-		return to == ProcStateRunning
+		return to == ProcStateRunning || to == ProcStateBlocked || to == ProcStateTerminated
 	case ProcStateRunning:
 		return to == ProcStateReady || to == ProcStateBlocked || to == ProcStateTerminated
 	case ProcStateBlocked:
-		return to == ProcStateReady
+		return to == ProcStateReady || to == ProcStateTerminated
 	default:
 		return false
 	}

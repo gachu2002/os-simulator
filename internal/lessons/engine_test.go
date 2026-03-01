@@ -121,6 +121,22 @@ func TestPrepareStageRespectsPrerequisites(t *testing.T) {
 	}
 }
 
+func TestPrepareStageValidationErrors(t *testing.T) {
+	e := NewEngine()
+
+	if _, err := e.PrepareStage("missing", 0); err == nil {
+		t.Fatalf("expected lesson not found error")
+	}
+
+	if _, err := e.PrepareStage("l01-sched-rr-basics", -1); err == nil {
+		t.Fatalf("expected invalid negative stage index error")
+	}
+
+	if _, err := e.PrepareStage("l01-sched-rr-basics", 99); err == nil {
+		t.Fatalf("expected invalid large stage index error")
+	}
+}
+
 func TestStageThreeAllowsModuleSpecificConfigActions(t *testing.T) {
 	e := NewEngine()
 
@@ -225,6 +241,99 @@ func TestValidatorSpecificHintsOverrideStageHints(t *testing.T) {
 	}
 	if r3.Hint != "validator-explicit" || r3.HintLevel != 3 {
 		t.Fatalf("attempt3 validator hint mismatch: level=%d hint=%q", r3.HintLevel, r3.Hint)
+	}
+}
+
+func TestStageStatusTracksUnlocksAttemptsAndCompletion(t *testing.T) {
+	catalog := map[string]Lesson{
+		"status": {
+			ID:    "status",
+			Title: "Status",
+			Stages: []Stage{
+				{
+					ID:    "s1",
+					Title: "first",
+					Config: SimConfig{
+						Seed:            1,
+						Policy:          sim.PolicyRR,
+						Quantum:         2,
+						Frames:          8,
+						TLBEntries:      4,
+						DiskLatency:     3,
+						TerminalLatency: 1,
+					},
+					Validators: []ValidatorSpec{{Name: "complete", Type: "metric_eq", Key: "completed_processes", Number: 0}},
+				},
+				{
+					ID:            "s2",
+					Title:         "second",
+					Prerequisites: []string{"status:s1"},
+					Config: SimConfig{
+						Seed:            2,
+						Policy:          sim.PolicyRR,
+						Quantum:         2,
+						Frames:          8,
+						TLBEntries:      4,
+						DiskLatency:     3,
+						TerminalLatency: 1,
+					},
+					Validators: []ValidatorSpec{{Name: "complete", Type: "metric_eq", Key: "completed_processes", Number: 0}},
+				},
+			},
+		},
+	}
+
+	e := NewEngineWithCatalog(catalog)
+	lesson := e.catalog["status"]
+
+	beforeFirst := e.StageStatus("status", lesson.Stages[0])
+	if !beforeFirst.Unlocked || beforeFirst.Attempts != 0 || beforeFirst.Completed {
+		t.Fatalf("unexpected first stage status: %+v", beforeFirst)
+	}
+
+	beforeSecond := e.StageStatus("status", lesson.Stages[1])
+	if beforeSecond.Unlocked || beforeSecond.Attempts != 0 || beforeSecond.Completed {
+		t.Fatalf("unexpected second stage status before prerequisite: %+v", beforeSecond)
+	}
+
+	if _, err := e.RunStage("status", 0); err != nil {
+		t.Fatalf("run stage 0 failed: %v", err)
+	}
+
+	afterFirst := e.StageStatus("status", lesson.Stages[0])
+	if !afterFirst.Unlocked || !afterFirst.Completed || afterFirst.Attempts != 1 {
+		t.Fatalf("unexpected first stage status after completion: %+v", afterFirst)
+	}
+
+	afterSecond := e.StageStatus("status", lesson.Stages[1])
+	if !afterSecond.Unlocked || afterSecond.Completed || afterSecond.Attempts != 0 {
+		t.Fatalf("unexpected second stage status after prerequisite: %+v", afterSecond)
+	}
+}
+
+func TestRunStageReturnsExecutionErrors(t *testing.T) {
+	e := NewEngineWithCatalog(map[string]Lesson{
+		"broken": {
+			ID:    "broken",
+			Title: "Broken",
+			Stages: []Stage{{
+				ID:    "s1",
+				Title: "invalid config",
+				Config: SimConfig{
+					Seed:            1,
+					Policy:          "invalid",
+					Quantum:         1,
+					Frames:          8,
+					TLBEntries:      4,
+					DiskLatency:     3,
+					TerminalLatency: 1,
+				},
+			}},
+		},
+	})
+
+	if _, err := e.RunStage("broken", 0); err == nil {
+		t.Fatalf("expected run stage execution error")
 	}
 }
 

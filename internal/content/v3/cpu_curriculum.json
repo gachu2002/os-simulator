@@ -1,0 +1,312 @@
+{
+  "version": "v3",
+  "sections": [
+    {
+      "id": "virtualization-cpu",
+      "title": "Virtualization - CPU",
+      "subtitle": "How the OS creates the illusion that each process has its own CPU",
+      "order": 1,
+      "lessons": [
+        {
+          "id": "l01-process-basics",
+          "order": 1,
+          "title": "What is a Process?",
+          "objective": "Understand process state, PCB fields, and state transitions.",
+          "theory": {
+            "concepts": [
+              "A process is a running program managed by the OS.",
+              "Process state includes memory, registers, program counter, and open files.",
+              "Process state machine: running, ready, blocked with deterministic transitions.",
+              "The PCB stores scheduler-visible and kernel-visible process metadata.",
+              "Running means currently on CPU, Ready means runnable but waiting, Blocked means waiting for an event.",
+              "State transitions are triggered by events such as dispatch, I/O block, wakeup, and exit."
+            ]
+          },
+          "challenge": {
+            "description": "Control three processes and inspect state transitions tick-by-tick.",
+            "actions": [
+              "create_process",
+              "block_process",
+              "unblock_process",
+              "kill_process",
+              "step"
+            ],
+            "visualizer": [
+              "ready-running-blocked-swimlanes",
+              "process-cards",
+              "pcb-inspector",
+              "state-transition-timeline"
+            ]
+          }
+        },
+        {
+          "id": "l02-process-api-fork-exec-wait",
+          "order": 2,
+          "title": "Process API - fork, exec, wait",
+          "objective": "Use fork/exec/wait correctly and identify zombie process outcomes.",
+          "theory": {
+            "concepts": [
+              "fork creates a child process that continues from the same point.",
+              "exec replaces a process image with a new program.",
+              "wait blocks parent until child completion.",
+              "Skipping wait can create zombies until parent reaps child status.",
+              "Parent and child are distinguished by fork return value.",
+              "fork plus exec is a core shell pattern that separates process creation from program replacement."
+            ]
+          },
+          "challenge": {
+            "description": "Act as a shell and execute commands in sequence with correct parent-child synchronization.",
+            "actions": [
+              "fork",
+              "exec",
+              "wait",
+              "run_to_completion",
+              "skip_wait"
+            ],
+            "visualizer": [
+              "process-family-tree",
+              "pid-ppid-state-nodes",
+              "zombie-indicator",
+              "pseudo-code-panel",
+              "console-output-panel"
+            ]
+          }
+        },
+        {
+          "id": "l03-limited-direct-execution",
+          "order": 3,
+          "title": "Limited Direct Execution",
+          "objective": "Trace syscall trap flow and timer interrupt context-switch behavior.",
+          "theory": {
+            "concepts": [
+              "User mode and kernel mode separate privilege levels.",
+              "System calls trap from user to kernel via trap table entries.",
+              "Timer interrupts return control to OS for preemption.",
+              "Context switch saves/restores register state between processes.",
+              "Limited direct execution keeps programs fast while preserving OS control.",
+              "Trap entry and return must preserve correctness of user-visible execution state."
+            ]
+          },
+          "challenge": {
+            "description": "Complete syscall round-trip and forced preemption scenarios.",
+            "actions": [
+              "execute_instruction",
+              "issue_trap",
+              "handle_syscall",
+              "return_from_trap",
+              "fire_timer_interrupt",
+              "choose_next_process"
+            ],
+            "visualizer": [
+              "user-kernel-space-split",
+              "program-counter-arrow",
+              "mode-bit-register-panel",
+              "trap-table-highlight",
+              "kernel-stack-save-restore-view",
+              "cpu-owner-timeline"
+            ],
+            "parts": [
+              {
+                "id": "A",
+                "title": "System Call Round Trip",
+                "objective": "Walk user trap to kernel handler and back to user mode.",
+                "description": "Manually execute trap lifecycle for file-read syscall."
+              },
+              {
+                "id": "B",
+                "title": "Timer Interrupt and Context Switch",
+                "objective": "Observe forced preemption and process switch ordering.",
+                "description": "Use timer interrupts to trigger scheduler decisions."
+              }
+            ]
+          }
+        },
+        {
+          "id": "l04-cpu-scheduling-basics",
+          "order": 4,
+          "title": "CPU Scheduling Basics (FIFO, SJF, STCF)",
+          "objective": "Compare policy impact on turnaround, response, and fairness.",
+          "theory": {
+            "concepts": [
+              "FIFO is simple but suffers convoy effects.",
+              "SJF minimizes turnaround when durations are known and arrivals are aligned.",
+              "STCF preempts to approximate shortest remaining work.",
+              "Policy quality depends on workload arrival and burst patterns.",
+              "Turnaround, response, and fairness move differently under each policy.",
+              "Side-by-side comparisons reveal why no single policy dominates all workloads."
+            ]
+          },
+          "challenge": {
+            "description": "Configure arrivals and bursts, then compare three baseline policies.",
+            "actions": [
+              "set_arrival_time",
+              "set_burst_length",
+              "set_policy_fifo_sjf_stcf",
+              "step",
+              "run_to_completion",
+              "preempt_current_job"
+            ],
+            "visualizer": [
+              "gantt-chart",
+              "ready-queue-column",
+              "live-turnaround-metrics",
+              "stacked-policy-comparison"
+            ]
+          }
+        },
+        {
+          "id": "l05-round-robin",
+          "order": 5,
+          "title": "Round Robin",
+          "objective": "Tune quantum to balance response time and throughput.",
+          "theory": {
+            "concepts": [
+              "Round Robin cycles runnable jobs using fixed quanta.",
+              "Smaller quantum improves response but increases context switch overhead.",
+              "Larger quantum improves throughput but can hurt interactivity.",
+              "Context switch cost shapes practical scheduling tradeoffs.",
+              "Quantum tuning is a balance between latency for interactive work and total completion efficiency.",
+              "You cannot optimize response and turnaround simultaneously for all workloads."
+            ]
+          },
+          "challenge": {
+            "description": "Adjust quantum under interactive load and analyze tradeoff curves.",
+            "actions": [
+              "set_quantum",
+              "add_job",
+              "remove_job",
+              "step",
+              "run",
+              "toggle_context_switch_cost"
+            ],
+            "visualizer": [
+              "gantt-chart",
+              "response-time-vs-quantum-graph",
+              "turnaround-time-vs-quantum-graph",
+              "context-switch-slices"
+            ]
+          }
+        },
+        {
+          "id": "l06-mlfq",
+          "order": 6,
+          "title": "Multi-Level Feedback Queue (MLFQ)",
+          "objective": "Understand demotion, boosting, and anti-gaming controls.",
+          "theory": {
+            "concepts": [
+              "MLFQ approximates SJF by adapting to observed CPU usage.",
+              "CPU-bound jobs are demoted after consuming full quantum.",
+              "Priority boosts prevent starvation.",
+              "Anti-gaming rules track cumulative CPU usage, not only per-quantum behavior.",
+              "I/O-bound jobs often remain in higher-priority queues due to short CPU bursts.",
+              "Boost intervals and demotion rules determine long-run fairness and responsiveness."
+            ]
+          },
+          "challenge": {
+            "description": "Visualize queue movement and detect scheduler gaming behavior.",
+            "actions": [
+              "submit_job",
+              "choose_job_type_cpu_or_io_bound",
+              "step",
+              "trigger_priority_boost",
+              "toggle_gaming_prevention",
+              "set_boost_interval"
+            ],
+            "visualizer": [
+              "mlfq-queue-lanes-q0-q2",
+              "job-card-demotion-animation",
+              "cpu-hog-meter",
+              "fairness-score",
+              "demotion-history-column"
+            ],
+            "parts": [
+              {
+                "id": "A",
+                "title": "Basic MLFQ",
+                "objective": "Track demotion path of long-running CPU-bound jobs.",
+                "description": "Observe movement from top queue to lower queues over time."
+              },
+              {
+                "id": "B",
+                "title": "Catch the Gamer",
+                "objective": "Detect and mitigate near-quantum relinquish gaming.",
+                "description": "Toggle anti-gaming rules and compare fairness outcomes."
+              }
+            ]
+          }
+        },
+        {
+          "id": "l07-lottery-stride",
+          "order": 7,
+          "title": "Lottery and Stride Scheduling",
+          "objective": "Allocate CPU proportionally and compare probabilistic vs deterministic sharing.",
+          "theory": {
+            "concepts": [
+              "Lottery uses ticket draws for proportional scheduling.",
+              "Stride provides deterministic proportional share with pass values.",
+              "Ticket transfer and inflation alter effective priorities.",
+              "Long-run share convergence can be measured against target percentages.",
+              "Lottery gives probabilistic fairness while stride gives deterministic selection order.",
+              "Proportional-share scheduling is useful when service-level CPU ratios matter."
+            ]
+          },
+          "challenge": {
+            "description": "Configure target shares 50/30/20 and validate observed CPU allocation.",
+            "actions": [
+              "set_tickets",
+              "set_mode_lottery_or_stride",
+              "run_quanta",
+              "transfer_tickets"
+            ],
+            "visualizer": [
+              "target-vs-actual-cpu-share-pie-chart",
+              "lottery-draw-wheel",
+              "stride-pass-number-line",
+              "cpu-time-bar-chart"
+            ]
+          }
+        },
+        {
+          "id": "l08-multi-cpu-scheduling",
+          "order": 8,
+          "title": "Multi-CPU Scheduling",
+          "objective": "Balance two CPUs while preserving affinity and reducing imbalance.",
+          "theory": {
+            "concepts": [
+              "Single-queue multiprocessor scheduling can hurt affinity and scalability.",
+              "Multi-queue scheduling improves locality but can become imbalanced.",
+              "Migration and work-stealing address idle CPU scenarios.",
+              "Cache warmth and migration cost should be visible in policy decisions.",
+              "Load balancing must trade utilization gains against cache-locality losses.",
+              "Affinity-aware migration policy is essential for realistic multi-CPU performance."
+            ]
+          },
+          "challenge": {
+            "description": "Operate two CPU queues, migrate jobs, and tune stealing/affinity behavior.",
+            "actions": [
+              "step",
+              "migrate_job",
+              "toggle_work_stealing",
+              "toggle_affinity_protection"
+            ],
+            "visualizer": [
+              "dual-cpu-queue-columns",
+              "cache-warmth-bars",
+              "load-imbalance-indicator",
+              "migration-arrows",
+              "per-cpu-utilization-timeline"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "cross_cutting_features": [
+    "workload_editor",
+    "policy_comparison_mode",
+    "metrics_dashboard",
+    "what_went_wrong_hints",
+    "replay",
+    "cheat_sheet_sidebar"
+  ]
+}
